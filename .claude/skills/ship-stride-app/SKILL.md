@@ -315,6 +315,22 @@ other app's tables was a materially worse trade than it is for a single-user app
 **`stride2mortgage` is paused, not deleted** — restoring it from the Supabase
 dashboard costs one click and the free tier's second slot.
 
+**Two things about pausing, learned the same day, that the two-slot juggling in
+this collection makes worth knowing:**
+
+1. **A pause does not always stick.** `stride2mortgage` was paused, and was
+   `ACTIVE_HEALTHY` again when checked later in the same session — and the
+   limit had reclaimed the *other* project instead, leaving the app being
+   worked on `INACTIVE`. Always re-read the status rather than trusting the
+   call that returned `{"success": true}`.
+2. **A restored project answers SQL before its data is back.** `stride2palette`
+   came up mid-restore reporting **zero tables in `public`** — not an error,
+   just an empty schema — and every table, constraint and row was present a
+   couple of minutes later once it reached `ACTIVE_HEALTHY`. Do not conclude
+   data loss, and above all **do not "repair" it by re-running migrations
+   against a half-restored database.** Wait for `ACTIVE_HEALTHY`, then look
+   again.
+
 So the real rule is: **the first apps get their own project; everything after
 shares one, taking a Postgres schema each.** Name the schema after the app or
 its domain word.
