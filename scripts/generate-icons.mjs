@@ -39,10 +39,13 @@ const PALETTE = {
   ground: [0x14, 0x10, 0x0c], // the app's dark paper
   spent: [0x3a, 0x2f, 0x22],
   live: [0x4f, 0x8a, 0x40], // basil-bright
-  summit: [0xd9, 0xb9, 0x8a], // the palette board — light, so it caps the climb
-  ragu: [0xe2, 0x61, 0x4c],
-  cheese: [0xef, 0xbe, 0x5c],
-  basil: [0x8c, 0xc4, 0x7a],
+  summit: [0xc7, 0x9a, 0x63], // the palette board — light, so it caps the climb
+  // The paint, matching the on-screen mark. Bright values, not the text-safe
+  // accents: four dark dabs on a board vanish at 192px and in greyscale.
+  pasta: [0xf2, 0xe2, 0xc4],
+  ragu: [0xd9, 0x4a, 0x35],
+  cheese: [0xe8, 0xa9, 0x3c],
+  basil: [0x6a, 0xab, 0x4a],
 };
 
 // ---------------------------------------------------------------------------
@@ -162,6 +165,10 @@ const circle = (cx, cy, r) => (px, py) => (px - cx) ** 2 + (py - cy) ** 2 <= r *
 const ellipse = (cx, cy, rx, ry) => (px, py) =>
   ((px - cx) / rx) ** 2 + ((py - cy) / ry) ** 2 <= 1;
 
+/** Subtraction, which is how the palette gets its waist and its thumb hole. */
+const without = (shape, ...holes) => (px, py) =>
+  shape(px, py) && !holes.some((hole) => hole(px, py));
+
 // ---------------------------------------------------------------------------
 // The mark
 // ---------------------------------------------------------------------------
@@ -222,23 +229,33 @@ function drawMark(pixels, size, inset = 0) {
     y1: at(cy + ry) + 0.01,
   };
 
-  // 1. The board.
-  fillShape(pixels, size, ellipse(at(cx), at(cy), sz(rx), sz(ry)), PALETTE.summit, bounds);
+  // 1. The board, with a bite taken out of the lower right.
+  //
+  //    That waist is what makes the shape a palette rather than an oval. The
+  //    first version of this was a plain ellipse and read as a lollipop head;
+  //    the on-screen mark hit the same problem and was fixed the same way.
+  const notch = circle(at(cx + rx * 0.84), at(cy + ry * 1.02), sz(rx * 0.46));
+  fillShape(
+    pixels, size,
+    without(ellipse(at(cx), at(cy), sz(rx), sz(ry)), notch),
+    PALETTE.summit, bounds,
+  );
 
   // 2. The thumb hole, back to the ground colour.
   fillShape(
     pixels, size,
-    circle(at(cx - rx * 0.44), at(cy + ry * 0.3), sz(rx * 0.21)),
+    circle(at(cx - rx * 0.46), at(cy + ry * 0.26), sz(rx * 0.2)),
     PALETTE.ground, bounds,
   );
 
-  // 3. The paint. Ragù, cheese, basil.
-  const blobs = [
-    [cx + rx * 0.22, cy - ry * 0.42, rx * 0.22, PALETTE.ragu],
-    [cx + rx * 0.62, cy + ry * 0.08, rx * 0.19, PALETTE.cheese],
-    [cx + rx * 0.1, cy + ry * 0.5, rx * 0.17, PALETTE.basil],
+  // 3. The paint — the four layers of a lasagna.
+  const dabs = [
+    [cx - rx * 0.48, cy - ry * 0.42, rx * 0.2, PALETTE.pasta],
+    [cx - rx * 0.05, cy - ry * 0.62, rx * 0.22, PALETTE.ragu],
+    [cx + rx * 0.42, cy - ry * 0.38, rx * 0.19, PALETTE.cheese],
+    [cx + rx * 0.52, cy + ry * 0.18, rx * 0.17, PALETTE.basil],
   ];
-  for (const [bx, by, br, colour] of blobs) {
+  for (const [bx, by, br, colour] of dabs) {
     fillShape(pixels, size, circle(at(bx), at(by), sz(br)), colour, bounds);
   }
 }

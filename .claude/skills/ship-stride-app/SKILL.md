@@ -755,21 +755,41 @@ over shortening the cookie** — and say plainly that revoking is a thing somebo
 has to remember, where an expiry is not.
 
 **10. The mark is an artist's palette**, matching the app's name, in the three
-tonal layers the collection requires: the board, the glaze of light across it,
-and the paint. The three blobs are the paints and the lasagna layers at once —
-ragù, cheese, basil — so the app's whole colour system sits on its own logo.
+tonal layers the collection requires: the board, the darker rim along its
+underside, and the paint. The four dabs are the four layers of a lasagna —
+pasta, ragù, cheese, basil — so the app's colour system sits on its own logo.
 
-The thumb hole is what makes an oval read as a palette at 32px, so it is punched
-with `fill-rule: evenodd` rather than painted in the background colour; a dot in
-the page colour stops being a hole the moment the mark is placed on a card. The
-null condition is `.palette--clean`: the paint disappears and the board drops to
-the line tokens, so it reads as an unused palette in greyscale before colour is
-considered.
+The first version was rejected by Adir as looking like "an amateur drawing of a
+palette", and he was right. Two things fixed it, and both are general:
 
-The icon summit is the same palette, and the climb underneath it is unchanged.
-Both of the family's drawing lessons applied again: the board had to be sunk
-into the live bar to avoid a lollipop, and the thumb hole had to be punched in
-the ground colour to be visible at 192px.
+- **The silhouette needs the waist.** An ellipse with dots on it is clip-art.
+  What the eye actually recognises is the concave pinch on the lower right where
+  the hand goes, and it survives being shrunk to 30px. The icon summit needed
+  the same correction — there it is an ellipse with a circle subtracted from its
+  lower-right edge.
+- **The board must be light and the paint bright.** The first version drew a
+  dark board and used the app's own accents as paint. Those are dark *by
+  construction* — they exist to clear 4.5:1 on cream — so four of them on a
+  board sat at almost the same value and vanished in greyscale. **Paint is a
+  graphic, not text, and takes the bright values.** Worth stating generally: the
+  text palette and the illustration palette are not the same palette, and
+  reaching for the accent tokens inside a mark is usually a mistake.
+
+The thumb hole is punched with `fill-rule: evenodd`, so it is a real hole and
+shows whatever the mark sits on; painted in the page colour it would stop being
+a hole the moment it was placed on a card. The null condition empties the
+palette rather than recolouring it — and `--line` was too pale for the board
+there, so it takes `--line-strong`: unused must still read as a palette, or the
+hero looks broken before an opening date is set.
+
+**Render marks and look at them.** All of the above was found by screenshotting
+candidates with the headless Chromium that ships in these sandboxes
+(`/opt/pw-browsers/chromium-*/chrome-linux/chrome --headless --screenshot`),
+at 88px, 44px and 27px, in both themes and in greyscale, against paper and
+against a card. Reasoning about an SVG path is not a substitute for seeing it.
+Build the harness from the real `globals.css` rather than a copy of the tokens —
+two of the "bugs" found this way were the harness dropping variables the real
+cascade provides.
 
 **11. Pull-to-refresh is adopted from Stride rather than reinvented.** Adir asked
 for it and Stride's `PullToRefresh.js` already solves it well: square-root
