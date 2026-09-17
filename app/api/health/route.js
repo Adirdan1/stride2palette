@@ -15,9 +15,48 @@ import { db } from '@/lib/db.js';
  *
  * The probe reads `settings`, which has exactly one row and no secrets in it.
  */
+/**
+ * Never let a secret out of this endpoint.
+ *
+ * The first version of this probe returned the driver's error message verbatim,
+ * and the very first real failure was `Headers.set: "<the key>" is an invalid
+ * header value` — which printed the service role key on a public URL. An error
+ * message is attacker-influenced data that routinely quotes the input that
+ * caused it, so the only safe rule is to strip the known secrets out of it
+ * rather than to reason about which messages are safe.
+ *
+ * The configured values are removed first, which catches the exact case above
+ * even when the stored value is mangled, and key-shaped tokens are stripped
+ * afterwards in case a secret arrives here by some route this file does not
+ * know about.
+ */
+function redact(message) {
+  let out = String(message ?? '');
+
+  for (const secret of [
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    process.env.PALETTE_SECRET,
+    process.env.PALETTE_BOOTSTRAP_KEY,
+  ]) {
+    if (secret && secret.length >= 8) out = out.split(secret).join('[redacted]');
+  }
+
+  // Key-shaped tokens, including ones broken across lines by a bad paste.
+  out = out.replace(/sb_(secret|publishable)_[A-Za-z0-9_\-\s]{4,}/g, 'sb_$1_[redacted]');
+  out = out.replace(/eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}/g, '[redacted-jwt]');
+
+  return out.slice(0, 200);
+}
+
 function classify(error) {
   const message = String(error?.message ?? '').toLowerCase();
   const code = String(error?.code ?? '');
+
+  // A stray newline or space inside the key lands here: the value never reaches
+  // the network at all, because it cannot be put in an HTTP header.
+  if (message.includes('invalid header value') || message.includes('headers.set')) {
+    return 'key-malformed';
+  }
 
   if (message.includes('api key') || message.includes('unauthorized') || code === '401') {
     return 'key-rejected';
@@ -47,9 +86,8 @@ export async function GET() {
             checked: true,
             ok: false,
             reason: classify(error),
-            // The database's own words, truncated. A rejected key says so
-            // plainly, and nothing here is secret.
-            detail: String(error.message ?? '').slice(0, 200),
+            // The database's own words, with every known secret stripped out.
+            detail: redact(error.message),
           }
         : { checked: true, ok: true };
     } catch (error) {
@@ -57,7 +95,7 @@ export async function GET() {
         checked: true,
         ok: false,
         reason: classify(error),
-        detail: String(error?.message ?? '').slice(0, 200),
+        detail: redact(error?.message),
       };
     }
   }
