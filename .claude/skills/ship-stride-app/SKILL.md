@@ -255,6 +255,15 @@ credentials. It gets read-only connectors, and those are not enough:
 | Vercel MCP connector | can **read** projects and deployments. Cannot create a project — `403 forbidden`. Has **no environment-variable tool at all.** |
 | Supabase MCP connector | can run SQL and apply migrations. Exposes **publishable** keys only; the service-role key is withheld by design. |
 
+**Note on key names, 2026-09-17.** Supabase's dashboard now calls these
+**Publishable** and **Secret** keys, and the secret one reads `sb_secret_...`
+rather than being a service-role JWT. It is the same credential for our purposes:
+server-only, bypasses RLS. Keep the variable named `SUPABASE_SERVICE_ROLE_KEY`
+across the collection and paste the new value into it. The trap is the
+publishable key, which looks like the obvious choice and fails silently — with
+RLS on and zero policies, an app holding it starts perfectly and then finds every
+table empty.
+
 So from a cloud session the deploy stalls on exactly two secrets, neither of
 which is about the app:
 
