@@ -288,6 +288,45 @@ into the next app and change `PROJECT` and `REPO`.
 **This is why deploying from a laptop feels like fewer steps.** It is not the
 app being harder; it is `vercel` already being logged in there.
 
+### Never import the repo before the code is on the production branch
+
+Learned on stride2palette, 2026-09-17, and it cost an evening.
+
+Vercel detects the framework **once, at import**, and the answer sticks as a
+project setting. The repo was imported while `main` still held nothing but a
+README, so detection found no `package.json`, saved the preset as **Other**, and
+never looked again. The first deploy was a cheerful `READY` serving 404s, which
+looked like "the code isn't merged yet" and was not.
+
+The damage shows up *after* the merge. With the preset at Other, Vercel does not
+run the Next.js builder at all — it treats the repo as a generic Node project,
+finds `middleware.js` at the root, and publishes it as a standalone serverless
+function. That fails at runtime with
+
+```
+Cannot find module '/var/task/node_modules/next/server'
+  imported from /var/task/middleware.js
+```
+
+because the middleware is being loaded as raw ESM instead of the bundled edge
+artifact the build produced. `next build` locally shows a perfectly correct
+`middleware-manifest.json` the whole time, which makes this maddening to
+diagnose from the repo. The tell is in the runtime log label:
+`serverless-middleware` and `lambdaRuntimeStats: {"nodejs":1}`, where middleware
+should be on the edge.
+
+**Two defences, use both:**
+
+1. **Commit a `vercel.json` with `{"framework": "nextjs"}`.** It overrides the
+   project setting, so import order stops mattering and a future re-import
+   cannot get it wrong either. Every app in the collection should carry one.
+2. **Merge to the production branch first, import second.** `scripts/vercel-setup.sh`
+   does it in that order for exactly this reason.
+
+If it has already happened: Settings → Build and Deployment → Framework Preset →
+Next.js, then redeploy. Changing the preset does not retroactively fix the bad
+deployment; it needs a new one.
+
 Secrets are server-only and must never carry a `NEXT_PUBLIC_` prefix. `.env.example`
 lists every variable with a comment explaining what it is for and what happens if it
 is missing.
