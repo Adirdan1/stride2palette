@@ -416,6 +416,40 @@ The state differs in *form and weight*, not only colour.
 **The wordmark** is the app name in the display face followed by a full stop in
 the accent colour: `stride<span class="brand__mark">.</span>`.
 
+**The icon mark is a different mark, and it is the family's.** Recovered
+2026-09-17 from `scripts/generate-icons.mjs` in Stride, which earlier sessions
+could not read. This file previously described only the on-screen mark and left
+the impression that the icon was the same drawing; it is not, and the distinction
+is load-bearing.
+
+The icon is **the climb**: four rising bars, the tallest one live, topped by a
+summit that says what that app is climbing towards. Stride's summit is a flame,
+stride2mortgage's is a house, stride2palette's is a lit doorway. In Stride's own
+words, *"the climb is constant across the family so the apps read as siblings;
+only the summit changes"* — and it is the same object the app already draws, a
+segmented progress bar stood on its end, rather than a decoration applied on top
+of one.
+
+So each app has **two** marks: the three-layer animated form on screen, and the
+climb with its own summit on the home screen. The palette is per app; the climb
+is not.
+
+The generator is worth copying rather than rewriting. It encodes PNG by hand
+from `node:zlib` with no image library at all, and draws shapes as a predicate
+("is this point inside?") sampled 4×4 per pixel, so a rounded bar, a circle, a
+triangle and an arch all draw through one code path.
+
+Three lessons are recorded in its comments and all three were re-learned building
+stride2palette's summit, which suggests they are general:
+
+- **A shape balanced on the live bar reads as a lollipop.** Sink it into the bar
+  so there is no waist where the two meet.
+- **A bare silhouette on a narrow column reads as an arrow.** Stride's note is
+  that what makes a roof a house is having walls under it; what makes an arch a
+  doorway is light inside it and a leaf standing across that light.
+- **A summit layer drawn in the live bar's own colour fuses with the bar.** Give
+  each layer its own tone even when they are shades of the same hue.
+
 **The faces are fixed across the collection:**
 
 | | |
