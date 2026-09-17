@@ -71,7 +71,9 @@ describe('PINs', () => {
 describe('sessions', () => {
   it('names its cookie and its lifetime', () => {
     expect(SESSION_COOKIE).toBe('palette_session');
-    expect(SESSION_MAX_AGE).toBe(60 * 60 * 24 * 30);
+    // A year, matching Stride. Revocation is the sessions table's job, not the
+    // expiry's — see the note in lib/auth.js.
+    expect(SESSION_MAX_AGE).toBe(60 * 60 * 24 * 365);
   });
 
   it('returns the user id the token was issued for', async () => {

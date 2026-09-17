@@ -638,6 +638,19 @@ reading an invoice. Adding an `x-api-key` path with nothing to put through it wo
 be machinery for its own sake — revisit when the venue opens and daily sales start
 arriving.
 
-**9. Still open.** The mark is not designed yet: it must be a single form in three
+**9. Signing in lasts a year, even though this app has staff in it.** Adir's
+call. It was thirty days first, reasoning that a multi-user app holding a
+business's finances has a worse failure case than one person's phone — a device
+that left with somebody, rather than somebody staying signed in.
+
+The year stands because the multi-user apps have something Stride does not: a
+`sessions` table. An expiry is a blunt instrument aimed at a problem revocation
+solves precisely and immediately, and the friction of a short expiry lands on
+people trying to do their jobs rather than on the person you are worried about.
+**So in any app in this collection with a sessions table, prefer revoking a row
+over shortening the cookie** — and say plainly that revoking is a thing somebody
+has to remember, where an expiry is not.
+
+**10. Still open.** The mark is not designed yet: it must be a single form in three
 tonal layers with a distinct null state, per the recovered design language, and
 whatever it is has to be checked in greyscale before it ships.

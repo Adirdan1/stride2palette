@@ -93,6 +93,12 @@ The session cookie carries the user id and an HMAC over both id and issue time,
 so the edge middleware verifies identity with no database call. The `sessions`
 row exists for revocation and last-seen, and stores the token hashed.
 
+Signing in lasts a year, as it does in Stride. Being asked for a PIN is friction
+that lands on people trying to do their jobs, and a short expiry is a blunt
+instrument for the thing it is aimed at. **Deleting the `sessions` row is the
+sharp one** — it revokes that device immediately, which is what to do when a
+phone is lost or somebody leaves.
+
 There are no roles. Everyone who can sign in can see and edit everything, which
 is a decision rather than an omission — a venue this size has no information one
 member of staff should be kept from.
