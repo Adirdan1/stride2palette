@@ -1,0 +1,1 @@
+# stride2palette
