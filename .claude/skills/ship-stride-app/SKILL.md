@@ -1,0 +1,681 @@
+---
+name: ship-stride-app
+description: How to build and ship an app in the Stride collection — stack, project layout, the pure-core rule, data and date conventions, the PIN gate, the design system, testing, and deploy. Use whenever starting a new app in the collection, adding a route, table, or screen to one, or deciding how something should be structured. Also use when reconciling these conventions against the original collection skill.
+---
+
+# Shipping an app in the Stride collection
+
+> **These conventions are reconstructed, not authoritative.**
+>
+> They were derived by reading the working code of `Adirdan1/stride`, because the
+> original collection skill was on a laptop and unreachable at the time. Everything
+> below marked as a rule was observed in that codebase or confirmed directly by
+> Adir. Everything uncertain is listed under **Assumptions** at the end.
+>
+> When the original skill becomes available, reconcile against it and rewrite this
+> file. Keep conventions here rather than scattering them through the code, so that
+> reconciliation stays a diff.
+>
+> **2026-09-15, building stride2do.** The GitHub repo `Adirdan1/stride` was *not*
+> reachable from that session either — it is not in the account's accessible repo
+> list, and attaching it was refused. So the source this file was reconstructed
+> from could not be re-read. Two other sources were used instead, and both are
+> live rather than remembered:
+>
+> - the **`Stride` Supabase project**, whose schema was read directly;
+> - the **deployed Stride app on Vercel**, whose compiled `globals.css` is served
+>   publicly even though the app itself is PIN-gated.
+>
+> Between them they confirmed most of this file and settled several of the
+> Assumptions outright. Verdicts are recorded inline below and in the Assumptions
+> section. Anything still marked *unverified* has now failed to be verified twice,
+> and should be treated as the weakest material here.
+>
+> **2026-09-17, building stride2palette. The source was finally readable.**
+> `Adirdan1/stride` and `Adirdan1/stride2do` were both attached and cloned in this
+> session, so for the first time this file could be checked against the code it was
+> reconstructed from rather than against artefacts of it. Every remaining
+> *unverified* assumption that the source could settle is now settled — see the
+> Assumptions table. The original laptop skill is still the authority if it ever
+> turns up, but the gap this file was apologising for is now much smaller.
+>
+> One figure was simply wrong and is corrected below: Stride has **381** tests, not
+> 94.
+
+## Stack
+
+Next.js 15 (App Router), **plain JavaScript — not TypeScript**. React 19. Supabase
+Postgres. Deployed on Vercel.
+
+Runtime dependencies are limited to `next`, `react`, `react-dom`, and
+`@supabase/supabase-js`. `vitest` is the only dev dependency.
+
+**No CSS framework and no component library.** No Tailwind, no shadcn. CSS is
+written by hand against design tokens. This is deliberate: the collection is small
+apps that should stay legible and load fast, and a framework is a large permanent
+cost for a small one-off saving.
+
+Node 20 or newer.
+
+## Layout
+
+```
+app/
+  page.js              the one screen that answers the app's main question
+  layout.js            fonts, metadata, manifest, nav
+  globals.css          the design system — read before changing any styling
+  loading.js           a skeleton shaped like the real content
+  components/          server components by default, 'use client' only where needed
+  api/                 one directory per endpoint, route.js inside
+lib/
+  core.js              all pure logic
+  repo.js              data access, and the only module that knows column names
+  db.js                the Supabase client, built lazily
+  auth.js              PIN comparison and cookie signing, Web Crypto only
+  format.js            presentation helpers
+test/                  Vitest suites over the pure modules
+supabase/migrations/   schema, applied in filename order
+scripts/               icon generation, the Scriptable widget
+middleware.js          the PIN gate, runs on the edge
+jsconfig.json          maps @/* to the repo root
+```
+
+## The core rule
+
+**`lib/core.js` has no imports. Zero.**
+
+No database, no network, no `new Date()` without an explicit `now` passed in. All
+of the app's actual rules live there as pure functions.
+
+This is the single most load-bearing convention in the collection. It is what makes
+the rules exhaustively testable without a database — Stride has 381 tests across 14
+files over its pure modules, covering the cases that actually bite, and they run in
+under a second.
+
+`lib/repo.js` is the boundary. It is the only place that knows table and column
+names, and it translates between the database's vocabulary and core's. When the two
+disagree on a word, translate at the boundary rather than bending either side.
+
+## Data
+
+**Derive state, never store it.** If a value can be recomputed from the rows, do
+not add a column for it. Stride has no `streak` column anywhere; it recomputes on
+every read. A stored counter would need migrating backwards every time late data
+arrived, and would be wrong in the meantime.
+
+**Events go in a ledger, not a counter.** Each entry carries a deterministic
+idempotency key, and writes use `on conflict do nothing`. That makes reconciliation
+safe to run on every single read and free after the first time — which is what
+makes derived state affordable.
+
+**Freeze values onto rows at write time.** The goal, rate, or threshold in force
+when a row was written stays on that row forever. Changing a setting decides what
+tomorrow demands; it must never retroactively rewrite what yesterday meant.
+
+**Absence is neutral, not failure.** A missing row means nothing happened, not that
+something went wrong. Distinguish *no data* from *data showing a miss* — only the
+second one is a negative outcome. Never backfill zero rows to fill gaps.
+
+**Settings is one row**, pinned with `id int primary key default 1 check (id = 1)`,
+inserted once with `on conflict do nothing`.
+
+**Dates are calendar dates**, formatted `YYYY-MM-DD`, treated as dates and not as
+instants. Date arithmetic runs on integer day numbers, which have no DST and no
+offset. **Exactly one function in the whole codebase is timezone-aware** — the one
+that decides which calendar date a given instant falls on. That is the only place a
+day boundary can shift, and it should be the only place anyone has to check.
+
+**RLS is enabled on every table with no policies at all.** The server reaches the
+database only with the service role key, which bypasses RLS by design. An anon or
+publishable key sees nothing even if one leaks.
+
+## Money
+
+New with stride2palette, the first app in the collection to handle currency.
+
+**Amounts are integers in the smallest unit** — agorot, never shekels, and never a
+float. Not in the column, not in core, not in transit. `numeric` would also be
+exact, but an integer is exact *and* cannot be quietly widened to a float by a JSON
+round trip on the way to the browser.
+
+**Amounts are entered gross**, exactly as they appear on the invoice. Net and the
+VAT component are derived for display and never typed in, because the invoice is
+the thing the person actually has in their hand. Deriving the part you can reclaim
+is arithmetic; re-typing it is a second chance to be wrong.
+
+**The VAT rate is frozen onto the row**, per *freeze values onto rows at write
+time*. The Israeli rate has already moved once, 17% to 18%. A rate change decides
+what tomorrow's invoice means and must never rewrite what last March's did. The
+current rate lives in `settings` and is copied onto each row as it is written.
+
+**Round once, at the edge.** Keep integers exact all the way through core and round
+only where a number is rendered. A VAT split that rounds mid-calculation stops
+summing to the total, and a budget that is off by an agora looks broken even when
+it is not.
+
+## Auth
+
+One shared PIN. One HMAC-signed cookie. No user table, no sessions table, no
+NextAuth — there is exactly one person using each of these apps, and the threat
+model is "someone guessed the URL", not "someone is attacking my identity provider".
+
+The cookie holds no secret: an issue timestamp and an HMAC of it, so a stolen cookie
+cannot be turned back into the PIN. It lasts a year, because the phone should not be
+asked again every week.
+
+**Web Crypto only, never `node:crypto`** — middleware runs on the edge runtime,
+where `node:crypto` does not exist.
+
+**Fail closed.** If the PIN environment variable is unset in production, the app
+seals itself and says so. Development is left open so `npm run dev` needs no setup.
+
+Machine endpoints (ingest, backfill) carry their own `x-api-key` check inside the
+route and are exempt from the cookie gate, because a Shortcut has a key but no
+cookie. Read endpoints accept the key too, so a widget can fetch without a cookie.
+
+### More than one person
+
+The shared PIN is Stride's pattern, not the collection's — see Assumption 3, which
+is refuted. Three apps (`stride2mortgage`, `edu`, `sap`) carry real `users` and
+`sessions` tables. State the rule as: **one shared PIN where there is exactly one
+person, a real session model where there is more than one.**
+
+The house shape, read from `stride2mortgage`'s live schema on 2026-09-17:
+
+```
+users     id · username · display_name · pin_hash · household_id
+          · failed_attempts · locked_until · created_at · updated_at
+sessions  token_hash · user_id · created_at · expires_at · last_seen_at
+```
+
+A username and a PIN, hashed. Brute force is handled by `failed_attempts` and
+`locked_until` on the user row rather than by rate limiting the route — the lockout
+survives a restart and an attacker changing IP, which a route-level counter does
+not. Sessions are rows, and the token is stored **hashed**, so the table is a set of
+revocable references rather than a set of live keys.
+
+**Keep the gate free of database calls.** Middleware runs on the edge in front of
+every request; a session lookup there puts a round trip on the critical path of the
+entire app. Sign the user id into the cookie so middleware verifies with HMAC alone,
+and let the `sessions` row carry revocation and `last_seen_at`, checked in routes
+where a round trip is already being paid for.
+
+`household_id` is `stride2mortgage`'s grouping and is not general. Drop it wherever
+every user belongs to the same single thing.
+
+## Design
+
+Read `app/globals.css` before changing any styling. It is a system, not a starting
+point.
+
+- **Tokens on `:root`.** Light and dark are the same design; only the tokens change,
+  and no component below them knows which theme it is in. Dark values go in a
+  `@media (prefers-color-scheme: dark)` block that redefines tokens only.
+- **One accent colour**, and it should mean something specific. Additional colours
+  are permitted only where they carry a distinct meaning, and should differ in role
+  and weight, not just hue.
+- **Form carries meaning before colour does.** Filled, dashed, hollow, faint —
+  a view should still parse in greyscale. Colour is reinforcement, never the only
+  signal.
+- **One dominant element per screen.** Decide what the screen is for and let that
+  thing be biggest.
+- Fonts via `next/font/google` at **pinned weights**, not variable. Naming the
+  weights ships small static instances instead of every axis.
+- Small consistent radii. At most one shadow, and warm rather than black.
+- PWA: manifest, `themeColor` entries for both schemes, and icons **generated from
+  code** by a script rather than drawn, so the palette lives in one file.
+- Every interactive target clears 44px. Bottom navigation, because these are phone
+  apps held in one hand.
+
+## Tests
+
+Vitest, `environment: 'node'`, over the pure modules. Cover the cases that actually
+bite rather than chasing coverage: boundaries, late-arriving data, a setting changed
+part-way through history, month and year boundaries, and anything involving dates.
+
+`npm test` must pass before anything is pushed.
+
+## Deploy
+
+Vercel project linked to the GitHub repo. **Merging to `main` deploys.** Do not push
+non-git deployments into a linked project — it detaches the deployment from the
+commit and the next git push overwrites it anyway.
+
+### What an agent session needs to deploy without you
+
+Learned the hard way on stride2do, 2026-09-15. **Set these up once and every
+later app deploys in one step; skip it and every app ends with the same three
+manual clicks.**
+
+A Claude Code session running in the cloud has none of your laptop's
+credentials. It gets read-only connectors, and those are not enough:
+
+| | |
+| --- | --- |
+| Vercel MCP connector | can **read** projects and deployments. Cannot create a project — `403 forbidden`. Has **no environment-variable tool at all.** |
+| Supabase MCP connector | can run SQL and apply migrations. Exposes **publishable** keys only; the service-role key is withheld by design. |
+
+**Note on key names, 2026-09-17.** Supabase's dashboard now calls these
+**Publishable** and **Secret** keys, and the secret one reads `sb_secret_...`
+rather than being a service-role JWT. It is the same credential for our purposes:
+server-only, bypasses RLS. Keep the variable named `SUPABASE_SERVICE_ROLE_KEY`
+across the collection and paste the new value into it. The trap is the
+publishable key, which looks like the obvious choice and fails silently — with
+RLS on and zero policies, an app holding it starts perfectly and then finds every
+table empty.
+
+So from a cloud session the deploy stalls on exactly two secrets, neither of
+which is about the app:
+
+1. **`VERCEL_TOKEN`** — without it there is no way to create the project, set
+   env vars, or deploy. With it, install the CLI and the whole thing is one
+   pass: create, link, `vercel env add`, `vercel deploy --prod`.
+2. **`SUPABASE_SERVICE_ROLE_KEY`** — no connector will ever hand this over.
+
+Put both in the **remote environment's environment variables** (the Claude Code
+on the web environment settings — see
+https://code.claude.com/docs/en/claude-code-on-the-web), not in chat and not in
+the repo. They are then present for every future session in this collection.
+
+Everything else an app needs, a session can produce for itself: `APP_PIN` and
+`INGEST_API_KEY` are just random strings, and `SUPABASE_URL` is readable.
+
+Once those two are in the environment, `scripts/vercel-setup.sh` in stride2do
+does the whole Vercel side in one command — create, git-connect, set all four
+variables on production and preview — and leaves deploying to a push. Copy it
+into the next app and change `PROJECT` and `REPO`.
+
+**This is why deploying from a laptop feels like fewer steps.** It is not the
+app being harder; it is `vercel` already being logged in there.
+
+Secrets are server-only and must never carry a `NEXT_PUBLIC_` prefix. `.env.example`
+lists every variable with a comment explaining what it is for and what happens if it
+is missing.
+
+## Collection policy
+
+| | |
+| --- | --- |
+| Supabase | **one Postgres schema per app**, mostly inside one shared project — see below |
+| Vercel project | one per app, named `stride2<domain>`, lowercase |
+| GitHub repo | one per app, same name |
+| PIN | separate per app for now; may become shared later |
+| Cross-app linking | none by default; occasional and deliberate when it happens |
+
+**Corrected 2026-09-15.** This file previously said *one Supabase project per
+app, named after the app*. That is not what the collection actually does, and
+it cannot be: the Supabase free tier allows **two active projects per owner**,
+and there are more than two apps.
+
+What is actually there:
+
+| Supabase project | holds |
+| --- | --- |
+| `Stride` | `public` (Stride), `edu` (stride2edu), `sap` (stride2aws-sap), `stride2do` |
+| `stride2mortgage` | `public` (stride2mortgage) |
+| 3 others | paused, and paused projects do not count against the limit |
+
+**Updated 2026-09-17, building stride2palette.** Adir chose a dedicated project
+for this app and freed the slot by pausing `stride2mortgage`. The active pair is
+now `Stride` and `stride2palette`. This is the first app in the collection to take
+the isolated-credential option, and the reason is the section above: it is the only
+app with more than one human logging in, so its `service_role` key reaching every
+other app's tables was a materially worse trade than it is for a single-user app.
+**`stride2mortgage` is paused, not deleted** — restoring it from the Supabase
+dashboard costs one click and the free tier's second slot.
+
+**Two things about pausing, learned the same day, that the two-slot juggling in
+this collection makes worth knowing:**
+
+1. **A pause does not always stick.** `stride2mortgage` was paused, and was
+   `ACTIVE_HEALTHY` again when checked later in the same session — and the
+   limit had reclaimed the *other* project instead, leaving the app being
+   worked on `INACTIVE`. Always re-read the status rather than trusting the
+   call that returned `{"success": true}`.
+2. **A restored project answers SQL before its data is back.** `stride2palette`
+   came up mid-restore reporting **zero tables in `public`** — not an error,
+   just an empty schema — and every table, constraint and row was present a
+   couple of minutes later once it reached `ACTIVE_HEALTHY`. Do not conclude
+   data loss, and above all **do not "repair" it by re-running migrations
+   against a half-restored database.** Wait for `ACTIVE_HEALTHY`, then look
+   again.
+
+So the real rule is: **the first apps get their own project; everything after
+shares one, taking a Postgres schema each.** Name the schema after the app or
+its domain word.
+
+Doing it this way keeps the exit cheap — `pg_dump --schema=<app>` moves an app
+to a dedicated project with no untangling — but it costs two things, and both
+need saying out loud **before** the choice is made, not after:
+
+1. **One blast radius.** Pausing, restoring or hitting a limit on the shared
+   project takes every app in it down together.
+2. **One key for all of them.** A Supabase project has exactly one
+   `service_role` key. It bypasses RLS in every schema it has USAGE on, so the
+   key sitting in one app's Vercel project reads every other app's tables too.
+   Measured on 2026-09-15: that one key reads all 31 tables across `public`,
+   `edu`, `sap` and `stride2do`. RLS does not help here — bypassing it is the
+   point of that key — and neither does the per-schema `service_role`-only
+   grant, which keeps out the *anon* key, not this one.
+
+Point 2 is the one that gets missed, because per-schema grants look like
+isolation and are not. **The only way to get a genuinely separate credential is
+a separate project.** Weigh that against the free tier before sharing, rather
+than discovering it when handing an app's key to a deployment.
+
+**Setting up a shared-project schema:**
+
+1. `create schema <app>;`
+2. `grant usage on schema <app> to service_role;` — **service_role only.**
+   `edu` does this; `sap` also grants `anon` and `authenticated`, which is
+   looser for no benefit. Follow `edu`.
+3. Create the tables, `enable row level security` on each, and add no policies.
+4. `grant all on all tables in schema <app> to service_role;` plus the matching
+   `alter default privileges`.
+5. Expose it to PostgREST, **additively**, then reload:
+   ```sql
+   alter role authenticator set pgrst.db_schemas = 'public, graphql_public, edu, sap, <app>';
+   notify pgrst, 'reload config';
+   ```
+   Read the current value first and keep every schema already in it. Dropping
+   one silently breaks that app's API.
+6. In the app, `createClient(url, key, { db: { schema: '<app>' } })`.
+
+**RLS: confirmed across four apps.** Every table in `public`, `edu`, `sap` and
+`stride2do` has RLS enabled and **zero** policies. This is the most consistently
+followed rule in the collection.
+
+The `2` in `stride2<domain>` is a constant meaning "to" — `stride2mortgage` is
+"stride to mortgage". It is not a sequence number. Do not number apps.
+
+## Phone integration
+
+Optional per app, but the pattern exists and works:
+
+- An **iOS Shortcut** POSTs to an ingest endpoint with `x-api-key`. Have it send a
+  locally formatted `YYYY-MM-DD` date rather than a UTC instant, so the app files
+  data against the phone's calendar date and travel is handled automatically.
+- A **Scriptable widget** reads the same API. It is a script copied onto the phone,
+  not part of the build, so it does not update when the repo does. It draws with
+  `DrawContext`, which has no appearance context — so it cannot resolve a dynamic
+  colour and stays single-ground.
+- iOS defers automations that read protected data until the device is unlocked, and
+  suppresses them in Low Power Mode. **Design for irregular sync.** The absence-is-
+  neutral and derive-on-read rules above are what make that harmless; an endpoint
+  that accepts a batch of recent days makes each run self-healing.
+
+## Assumptions — status
+
+The nine points this file was unsure of, and where each now stands. "Confirmed"
+means observed in a live Stride artefact on 2026-09-15 (the Supabase schema, or
+the deployed CSS), not merely remembered.
+
+| # | Assumption | Verdict |
+| --- | --- | --- |
+| 1 | Plain JavaScript is a collection rule | **Confirmed 2026-09-17.** The source was read directly at last: `Adirdan1/stride` contains zero `.ts` or `.tsx` files, and ships `jsconfig.json` rather than `tsconfig.json`. Settled. |
+| 2 | Derived state and the idempotent ledger are expected everywhere | **Confirmed for Stride, and deliberately not followed in stride2do.** Stride really does have `freeze_ledger (key, delta, reason, ref_date)` and no `streak` column anywhere. But the machinery exists to make *reconciliation on every read* affordable, and a task manager has nothing to reconcile. See the deviation log below. |
+| 3 | The PIN gate is mandatory for every app | **Refuted.** `stride2mortgage`, `edu` and `sap` all have `users` and `sessions` tables. Three of the five apps with a database use a real session model, not a shared PIN — so the PIN may be Stride's *original* pattern rather than the collection's. The rule is better stated as: *one PIN where there is exactly one person*. Adir confirmed stride2do is single-user and asked for a PIN, so it has one. Worth asking the original skill which way this actually goes. |
+| 4 | `lib/core.js` with zero imports, and the core/repo/db/auth/format split | **Confirmed 2026-09-17.** All five filenames exist in `Adirdan1/stride` exactly as named, and `lib/core.js` has literally zero `import` statements across its 894 lines. The reconstruction was right. |
+| 5 | Generated icons are a collection requirement | **Confirmed 2026-09-17.** `scripts/generate-icons.mjs` exists in Stride and is wired up as `npm run icons`, exactly as this file guessed. |
+| 6 | Shortcut and widget are expected for every app | **Unverified.** Adir confirmed he uses both with Stride and wants the same here. Treated as optional-but-provided. |
+| 7 | The design rules are collection-wide; a logo design language exists | **Confirmed, and the logo language is now recovered.** See *Design language*, below — this was the biggest gap in the file and it is closed. |
+| 8 | The testing bar is "cover what bites" | **Still unverified as a stated rule, and the number was wrong.** Stride has **381** tests across 14 files, not 94 — so the real bar is far higher than this file claimed, and stride2do's 110 is below it rather than above. Treat 381 as the collection's demonstrated standard. |
+| 9 | Nothing found about error handling, logging, analytics, rate limiting | **Still nothing.** Stride ships no analytics script and no error reporter that is visible from the client. Genuinely open. |
+
+## Design language — recovered 2026-09-15
+
+Read out of the deployed Stride stylesheet. This is fact, not inference.
+
+**The mark.** Every app's mark is *a single form built from three tonal layers*,
+gently animated, and legible in greyscale. Stride has two: a flame
+(`.flame__body` / `__inner` / `__core`, filled from `--flame-deep` / `--flame-lit`
+/ `--flame-core`) and an iceberg (`.berg__deep` / `__tip` / `__facet`) for
+freezes. Each layer runs its own slow keyframe loop at a different period, so
+the motion never looks synchronised, and the whole thing sits inside
+`@media (prefers-reduced-motion: no-preference)`.
+
+The mark has a **second state** for the app's null condition — `.flame--cold`
+and `.berg--empty` both drop to `--line-strong` / `--line` and blank the core.
+The state differs in *form and weight*, not only colour.
+
+**The wordmark** is the app name in the display face followed by a full stop in
+the accent colour: `stride<span class="brand__mark">.</span>`.
+
+**The icon mark is a different mark, and it is the family's.** Recovered
+2026-09-17 from `scripts/generate-icons.mjs` in Stride, which earlier sessions
+could not read. This file previously described only the on-screen mark and left
+the impression that the icon was the same drawing; it is not, and the distinction
+is load-bearing.
+
+The icon is **the climb**: four rising bars, the tallest one live, topped by a
+summit that says what that app is climbing towards. Stride's summit is a flame,
+stride2mortgage's is a house, stride2palette's is a lit doorway. In Stride's own
+words, *"the climb is constant across the family so the apps read as siblings;
+only the summit changes"* — and it is the same object the app already draws, a
+segmented progress bar stood on its end, rather than a decoration applied on top
+of one.
+
+So each app has **two** marks: the three-layer animated form on screen, and the
+climb with its own summit on the home screen. The palette is per app; the climb
+is not.
+
+The generator is worth copying rather than rewriting. It encodes PNG by hand
+from `node:zlib` with no image library at all, and draws shapes as a predicate
+("is this point inside?") sampled 4×4 per pixel, so a rounded bar, a circle, a
+triangle and an arch all draw through one code path.
+
+Three lessons are recorded in its comments and all three were re-learned building
+stride2palette's summit, which suggests they are general:
+
+- **A shape balanced on the live bar reads as a lollipop.** Sink it into the bar
+  so there is no waist where the two meet.
+- **A bare silhouette on a narrow column reads as an arrow.** Stride's note is
+  that what makes a roof a house is having walls under it; what makes an arch a
+  doorway is light inside it and a leaf standing across that light.
+- **A summit layer drawn in the live bar's own colour fuses with the bar.** Give
+  each layer its own tone even when they are shades of the same hue.
+
+**The faces are fixed across the collection:**
+
+| | |
+| --- | --- |
+| Display | **Fraunces**, weight 700 only |
+| Sans | **Archivo**, weights 400 / 500 / 600 |
+
+Both via `next/font/google` at those pinned weights.
+
+**The shared tokens** — identical in stride2do, and they are the collection's,
+not Stride's:
+
+```
+--paper #f7f4ee   --surface #fffdfa   --sunken #efe9df
+--ink   #1b1a17   --ink-2   #57534b   --ink-3  #6f6a61
+--line  #e5ded2   --line-strong #cec4b3
+--radius-sm 6px   --radius 12px   --radius-lg 20px   --radius-pill 999px
+--lift 0 1px 2px rgba(69,48,28,.05), 0 8px 24px -12px rgba(69,48,28,.18)
+--measure 30rem   --pad 1.15rem   --spine 3px
+```
+
+Dark redefines tokens only, and sets `--lift: none`.
+
+**Accents are per app, and carry the app's meaning:**
+
+| app | accent | second colour | third |
+| --- | --- | --- | --- |
+| Stride | `--ember #bd5417` the streak | `--frost #2f75a0` freezes | `--break #a52f28` a miss |
+| stride2do | `--plum #6b3f6b` | — | `--break #a52f28` slipped |
+| stride2palette | `--bay #2f6b4f` cleared | `--brass #8a6a1f` a deadline closing | `--break #a52f28` overdue |
+
+`--break` appears to be shared across the collection and to mean the same thing
+in both: *this went wrong*. Treat it as reserved.
+
+**One caveat on the 44px rule.** Stride's own `.chip` is `min-height: 2.5rem`
+(40px), below the 44px this file states. `.btn` is exactly 2.75rem (44px). So
+either the rule is 44px for primary targets only, or Stride quietly breaks it.
+stride2do holds every target at 44px, including chips.
+
+## Decisions and deviations — stride2do
+
+Recorded as made, per the rule at the top of this file. Three of these are
+deliberate departures from what is written above.
+
+**1. No event ledger. (Deviation from *Events go in a ledger, not a counter*.)**
+Completion is `tasks.completed_on`, a date on the row. The ledger pattern exists
+so that derived state can be recomputed on every read without the recomputation
+getting more expensive over time — which matters enormously for a streak, where
+one late-arriving day rewrites the meaning of everything after it. A task
+completes once and nothing downstream depends on the order it happened in, so
+there is nothing to reconcile and the ledger would be cost with no benefit. If
+recurrence is ever added, revisit this first: a recurring task *does* have a
+history that late data can rewrite.
+
+**2. Nothing is frozen onto rows. (Deviation from *Freeze values onto rows at
+write time*.)** That rule protects against a setting change retroactively
+rewriting what a past row meant. stride2do has exactly one setting, `timezone`,
+and it is a lens rather than a rule — it decides which day *now* is, never what
+a past row demanded. There is nothing whose meaning a setting could change, so
+there is nothing to freeze. Adding any setting that shapes a task's meaning
+(a default due offset, a working-day calendar) means this rule comes back.
+
+**3. Derived state is kept, in full.** No counter is stored anywhere. `done` is
+`completed_on is not null`; the NOW / NEXT / SOMEDAY bands, the overdue count
+and everything the widget shows are computed by `groupTasks` / `summarise` on
+every read. A task silently moves from NEXT to NOW as the day turns, with no
+write and no cron.
+
+**4. Idempotency without a ledger.** `tasks.source_key` is unique and
+deterministic: `capturedOn|due|normalised-title`. A Shortcut that fires twice,
+or retries after a dropped connection, lands one task; the same title captured
+again next week is a genuinely different task. This is the ledger's idempotency
+discipline kept, on a table that is not a ledger.
+
+**5. The accent is `--plum #6b3f6b`, and the mark is the app's own row
+anatomy.** Plum was chosen knowing it carries no inherited meaning — orange
+reads as heat, green as done, red as wrong; plum reads as nothing. That forces
+form to carry the meaning, which is this file's rule stated harder than Stride
+states it. The mark is the spine and the weight ladder that every task row is
+built from, so the identity is the interface rather than decoration attached to
+it. Two earlier marks were built and rejected for meaning the wrong thing at
+small sizes: interlocking rings read as an infinity symbol, and a ring with a
+cord through it read as a prohibition sign.
+
+**6. Overdue is signalled by form first.** The spine down each row is the
+signalling system: solid plum for due now, **segmented** for overdue, solid
+faint for next, dashed for someday, none for done. Overdue was originally solid
+`--break`, and a greyscale check showed it indistinguishable from due-now —
+colour was doing all the work, which this file forbids. Segmenting it fixed
+that. **Run that check on any new row state.**
+
+**7. Bands, not a flat sort.** NOW / NEXT / SOMEDAY, with overdue folded into
+NOW rather than given its own band. A thing due on Tuesday is the same work as
+a thing due today, just later; a separate OVERDUE band makes the page longer
+without making the decision easier.
+
+**8. One extra day is read, and only today is shown.** The page queries
+completions from yesterday onward but renders only today's, so a task completed
+just before midnight does not vanish mid-session when the date turns under it.
+
+**9. The database is a schema inside the shared `Stride` Supabase project,
+not its own project.** Chosen by Adir against my recommendation to upgrade —
+and then vindicated, because inspecting the project showed `edu` and `sap`
+already living there the same way. It is the house pattern, not an exception.
+The tables are namespaced in `stride2do` and granted to `service_role` only,
+so leaving later costs one `pg_dump --schema=stride2do`. The standing risk is
+shared blast radius: anything that takes the `Stride` project down takes this
+app with it.
+
+**10. Testing.** 110 tests over `core`, `format` and `auth`, run in under a
+second. `toDayNumber` is cross-checked against `Date.UTC` across 80,000 days as
+an independent oracle. Note for whoever hits it next: `Date.UTC` maps years
+0–99 to 1900–1999, so it is not a valid oracle below year 100.
+
+## Decisions and deviations — stride2palette
+
+Recorded as made, per the rule at the top of this file. The app is a pre-opening
+launch board for a small venue selling lasagna, alcohol and coffee.
+
+**1. Its own Supabase project. (Deviation from *one Postgres schema per app inside
+one shared project*.)** Every other app takes a schema in `Stride`; this one has
+`stride2palette` (`niyfawkpjlkrspyutjmx`, eu-central-1) to itself, paid for by
+pausing `stride2mortgage`. The reason is point 2 of the shared-project warning
+above, and it is specific rather than general: this is the collection's first app
+with **more than one human logging in**. A `service_role` key that also reads four
+other apps' tables is an acceptable trade when the only person holding it is the
+person who owns those apps, and a worse one the moment staff have accounts. If this
+app ever drops back to a single user, the shared schema becomes the right call
+again.
+
+**2. Multi-user, following `stride2mortgage` rather than Stride.** `users` and
+`sessions` as described under *More than one person*, minus `household_id` — there
+is one venue and everyone in `users` is staff of it. No roles and no permissions in
+v1: everyone can see and edit everything. That is a real decision, not an omission.
+A venue this size has no information one member of staff should be kept from, and
+roles are the kind of thing that is cheap to add when a real need appears and
+expensive to guess at in advance.
+
+**3. Actual spend is a ledger; planned spend is a frozen column. (Follows *events go
+in a ledger*, where stride2do deviated from it.)** `items.planned_agorot` is what
+you expected to pay, frozen at write time and never recomputed. Actual spend is
+`sum(payments.gross_agorot)` for the item, derived on every read, with no
+`actual_agorot` column anywhere.
+
+The ledger earns its place here for the reason it did not in stride2do. A task
+completes once and nothing downstream depends on the order; a licence is paid as a
+deposit and then a balance, sometimes months apart, sometimes partly refunded when
+an application is withdrawn. That is a history, and a history that late data can
+rewrite — which is exactly the shape the ledger exists for. Each payment carries the
+VAT rate in force when it was made.
+
+**4. `waiting` is a first-class status**, alongside `todo`, `doing`, `done` and
+`dropped`. A permit application sitting with the municipality is not work you have
+not started, and for this app the difference is most of the anxiety: one of those
+states means *do something*, the other means *you have done your part*. Collapsing
+them into `doing` would make the board unable to answer the only question it is
+really for.
+
+**5. The accent is `--bay #2f6b4f`, and it means *cleared*.** 6.20:1 on `--surface`
+and 5.73:1 on `--paper`, which puts it inside the band the collection's other
+accents occupy (ember 4.65, frost 4.96, break 6.81, plum 8.12). The dark-mode lift
+is `#6fbf93`, 7.90:1 on the dark surface.
+
+This file warns that green reads as *done* and should not be reached for lazily.
+Here that inherited meaning is the correct one rather than a shortcut: the entire
+app is a list of approvals, permits and licences that are either granted or not,
+and *cleared* is the literal thing the colour has to say. `--brass #8a6a1f` is the
+second colour and means a deadline closing. `--break` keeps its reserved meaning,
+which here is overdue.
+
+**6. One screen.** `/` is the Launch Board; `/unlock` is the gate. Settings and
+people management live in sheets on that screen rather than in pages of their own.
+The collection's *one dominant element per screen* rule puts the countdown to
+opening day at the top, with planned-versus-actual spend on the spine bar beneath
+it.
+
+**7. The hero degrades honestly when there is no opening date.** `target_open_date`
+is nullable. With a date the hero counts down; without one it becomes the count of
+things still in the way, and becomes a countdown the moment a date is set. It must
+never render a countdown to a date nobody chose.
+
+**8. Manual entry only in v1.** No Shortcut, no widget, no ingest endpoint. Stride
+and stride2do both have one because they capture something that happens many times
+a day away from a keyboard. Pre-opening data is a few items a week and arrives while
+reading an invoice. Adding an `x-api-key` path with nothing to put through it would
+be machinery for its own sake — revisit when the venue opens and daily sales start
+arriving.
+
+**9. Signing in lasts a year, even though this app has staff in it.** Adir's
+call. It was thirty days first, reasoning that a multi-user app holding a
+business's finances has a worse failure case than one person's phone — a device
+that left with somebody, rather than somebody staying signed in.
+
+The year stands because the multi-user apps have something Stride does not: a
+`sessions` table. An expiry is a blunt instrument aimed at a problem revocation
+solves precisely and immediately, and the friction of a short expiry lands on
+people trying to do their jobs rather than on the person you are worried about.
+**So in any app in this collection with a sessions table, prefer revoking a row
+over shortening the cookie** — and say plainly that revoking is a thing somebody
+has to remember, where an expiry is not.
+
+**10. Still open.** The mark is not designed yet: it must be a single form in three
+tonal layers with a distinct null state, per the recovered design language, and
+whatever it is has to be checked in greyscale before it ships.
