@@ -6,7 +6,7 @@
  * The icon mark is the collection's, not this app's: four rising bars — "the
  * climb" — with the tallest one live, topped by whatever that app is climbing
  * towards. Stride's summit is a flame, stride2mortgage's is a house. This one's
- * is a lit doorway, because the thing being climbed towards here is opening day.
+ * is an artist's palette, loaded with the colours of a lasagna.
  *
  * Note that this is deliberately *not* the mark the app draws on screen. The
  * in-app mark is the door in three tonal layers (app/components/Mark.js); the
@@ -36,16 +36,13 @@ const OUT = join(HERE, '..', 'public', 'icons');
  * the eye travels to the top, and `glow` is the one warm note in the icon.
  */
 const PALETTE = {
-  ground: [0x13, 0x12, 0x10], // the app's dark paper
-  spent: [0x3d, 0x45, 0x40],
-  live: [0x3d, 0x8a, 0x66], // bay-bright
-  summit: [0x6f, 0xbf, 0x93], // bay, lifted — the door frame
-  glow: [0xf0, 0xd5, 0x9c], // the light beyond the door
-  // The leaf has to be its own tone rather than reusing `live`. Drawn in the
-  // bar's colour it fused with the bar underneath it and the whole summit went
-  // back to reading as a lollipop — the door has to sit on the climb, not grow
-  // out of it. This is the screen mark's --door-frame, the darkest of its three.
-  leaf: [0x2a, 0x4d, 0x3b],
+  ground: [0x14, 0x10, 0x0c], // the app's dark paper
+  spent: [0x3a, 0x2f, 0x22],
+  live: [0x4f, 0x8a, 0x40], // basil-bright
+  summit: [0xd9, 0xb9, 0x8a], // the palette board — light, so it caps the climb
+  ragu: [0xe2, 0x61, 0x4c],
+  cheese: [0xef, 0xbe, 0x5c],
+  basil: [0x8c, 0xc4, 0x7a],
 };
 
 // ---------------------------------------------------------------------------
@@ -159,15 +156,11 @@ const roundedRect = (x, y, w, h, r) => {
   };
 };
 
-/** A doorway: semicircular head, straight sides, open at the bottom. */
-const arch = (x, y, w, h) => {
-  const r = w / 2;
-  return (px, py) => {
-    if (px < x || px > x + w || py < y || py > y + h) return false;
-    if (py >= y + r) return true;
-    return (px - (x + r)) ** 2 + (py - (y + r)) ** 2 <= r * r;
-  };
-};
+const circle = (cx, cy, r) => (px, py) => (px - cx) ** 2 + (py - cy) ** 2 <= r * r;
+
+/** The palette board, and the shape the thumb hole is punched out of. */
+const ellipse = (cx, cy, rx, ry) => (px, py) =>
+  ((px - cx) / rx) ** 2 + ((py - cy) / ry) ** 2 <= 1;
 
 // ---------------------------------------------------------------------------
 // The mark
@@ -205,57 +198,49 @@ function drawMark(pixels, size, inset = 0) {
     );
   });
 
-  // The summit: a lit doorway standing on the live bar.
+  // The summit: an artist's palette resting on the live bar.
   //
-  // Drawn as three layers rather than an outline, for the reason the house
-  // summit needed walls: a bare arch at 192px reads as a tombstone. What makes
-  // it a doorway is the light inside it and the leaf standing across part of
-  // that light.
+  // The thumb hole is what makes an ellipse read as a palette, so it is punched
+  // in the ground colour rather than left out — and the blobs are the three
+  // lasagna layers, which is the same joke the on-screen mark tells.
+  //
+  // Sunk into the bar rather than balanced on it, for the reason every summit in
+  // this family is: a shape perched on the tip leaves the bar showing below as a
+  // stem and the whole thing reads as a lollipop.
   const liveX = startX + (HEIGHTS.length - 1) * (BAR_W + BAR_GAP);
   const cx = liveX + BAR_W / 2;
   const barTop = baseline - HEIGHTS[HEIGHTS.length - 1];
 
-  const halfW = BAR_W * 1.15;
-  const doorH = 0.265;
-  // Sunk deep into the bar, not balanced on top of it. The first attempt perched
-  // a short arch on the bar's tip and the result read as a lollipop: the bar
-  // carried on below as a stem, and an arch barely taller than it is wide is a
-  // knob rather than a doorway. Swallowing the top of the bar removes the stem,
-  // and the height is what makes it a door — it needs straight sides clearly
-  // longer than the semicircular head above them.
-  const doorBottom = barTop + 0.105;
-  const doorY = doorBottom - doorH;
-  const stroke = 0.030;
+  const rx = 0.118;
+  const ry = 0.097;
+  const cy = barTop - ry * 0.46;
 
   const bounds = {
-    x0: at(cx - halfW) - 0.01,
-    x1: at(cx + halfW) + 0.01,
-    y0: at(doorY) - 0.01,
-    y1: at(doorBottom) + 0.01,
+    x0: at(cx - rx) - 0.01,
+    x1: at(cx + rx) + 0.01,
+    y0: at(cy - ry) - 0.01,
+    y1: at(cy + ry) + 0.01,
   };
 
-  // 1. The frame, solid.
-  fillShape(pixels, size, arch(at(cx - halfW), at(doorY), sz(halfW * 2), sz(doorH)), PALETTE.summit, bounds);
+  // 1. The board.
+  fillShape(pixels, size, ellipse(at(cx), at(cy), sz(rx), sz(ry)), PALETTE.summit, bounds);
 
-  // 2. The room beyond, cut out of it.
-  const innerW = halfW * 2 - stroke * 2;
-  const innerX = cx - halfW + stroke;
-  const innerY = doorY + stroke;
+  // 2. The thumb hole, back to the ground colour.
   fillShape(
     pixels, size,
-    arch(at(innerX), at(innerY), sz(innerW), sz(doorBottom - innerY)),
-    PALETTE.glow, bounds,
+    circle(at(cx - rx * 0.44), at(cy + ry * 0.3), sz(rx * 0.21)),
+    PALETTE.ground, bounds,
   );
 
-  // 3. The leaf, standing across part of the light and starting below the
-  //    springing of the arch — so the light spills over the top of the door,
-  //    exactly as it does in the on-screen mark.
-  const leafY = innerY + innerW / 2;
-  fillShape(
-    pixels, size,
-    roundedRect(at(innerX), at(leafY), sz(innerW * 0.6), sz(doorBottom - leafY), 0),
-    PALETTE.leaf, bounds,
-  );
+  // 3. The paint. Ragù, cheese, basil.
+  const blobs = [
+    [cx + rx * 0.22, cy - ry * 0.42, rx * 0.22, PALETTE.ragu],
+    [cx + rx * 0.62, cy + ry * 0.08, rx * 0.19, PALETTE.cheese],
+    [cx + rx * 0.1, cy + ry * 0.5, rx * 0.17, PALETTE.basil],
+  ];
+  for (const [bx, by, br, colour] of blobs) {
+    fillShape(pixels, size, circle(at(bx), at(by), sz(br)), colour, bounds);
+  }
 }
 
 function render(size, inset = 0) {
