@@ -227,6 +227,38 @@ point.
 - Every interactive target clears 44px. Bottom navigation, because these are phone
   apps held in one hand.
 
+### The phone is the target, so test on one
+
+Four things bit stride2palette on an iPhone that no amount of desktop testing
+would have surfaced. All four are general.
+
+**1. A dialog effect that depends on `onClose` steals focus on every keystroke.**
+Callers pass `onClose={() => setThing(null)}`, a new function identity on every
+render. An effect with `[onClose]` in its dependency array therefore tears down
+and re-runs on *every* render — and if it calls `focus()`, it pulls focus out of
+the field being typed in. On a phone that closes the keyboard after every single
+letter, which reads as the app being broken rather than as a focus bug.
+
+Run such an effect once, with `[]`, and read the handler from a ref. Focus the
+dialog only when focus is not already inside it, so an autofocused first field
+is not fought over.
+
+**2. Safari zooms the page when a focused field is under 16px**, and does not
+zoom back out. State `font-size: max(16px, 1rem)` on every field rather than
+inheriting it, so a later change to the base size cannot reintroduce it.
+
+**3. `interactive-widget: 'resizes-content'` in the viewport export.** Without
+it the keyboard is drawn *over* the page, `100dvh` keeps counting the covered
+area, and a bottom sheet ends up underneath the keyboard. With it the viewport
+shrinks and the sheet stays where the person is looking. Pair it with
+`scroll-margin-block` on fields, or the browser scrolls a focused field flush
+against the keyboard with its label hidden.
+
+**4. `touch-action: manipulation` on everything tappable**, or Safari holds
+every tap for ~300ms in case it becomes a double-tap zoom. On a page with
+nothing zoomable that delay is pure lag, and it is the single biggest reason a
+web app "feels like a website".
+
 ## Tests
 
 Vitest, `environment: 'node'`, over the pure modules. Cover the cases that actually

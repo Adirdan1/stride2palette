@@ -31,6 +31,10 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // Make the on-screen keyboard shrink the viewport rather than sit on top of
+  // it, so a bottom sheet and the field being typed into stay visible. Without
+  // this, `100dvh` keeps counting the area the keyboard is covering.
+  interactiveWidget: 'resizes-content',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#f7f4ee' },
     { media: '(prefers-color-scheme: dark)', color: '#131210' },
