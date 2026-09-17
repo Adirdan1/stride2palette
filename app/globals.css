@@ -971,3 +971,87 @@ textarea.input {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+
+/* ==========================================================================
+   Phones
+   
+   These apps are held in one hand, so this is not a polish pass — it is the
+   primary target. Everything here fixes something that actually misbehaved on
+   an iPhone.
+   ========================================================================== */
+
+/* Safari zooms the whole page when a focused field is under 16px, and never
+   zooms back out. Every field states 16px explicitly rather than inheriting it,
+   so a future change to the base size cannot quietly reintroduce the zoom. */
+.input,
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
+}
+
+/* Removes the ~300ms wait Safari holds every tap for, in case it turns into a
+   double-tap zoom. On a page with no zoomable content that delay is pure lag. */
+button,
+.btn,
+.chip,
+.row,
+.fab,
+a,
+label,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrolling to the end of a sheet must not start scrolling the board behind it,
+   and a rubber-band bounce at the top of the sheet should not drag the page. */
+.sheet {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* When the keyboard opens, the browser scrolls the focused field into view.
+   Without a margin it lands flush against the keyboard or the sheet header,
+   with its label hidden just above the fold. */
+.field,
+.input,
+.row-2 {
+  scroll-margin-block: 5rem 7rem;
+}
+
+/* iOS renders a date input as a right-aligned grey stub inside a full-width
+   box, which does not read as the same control as the text fields beside it. */
+input[type='date'] {
+  min-height: 2.75rem;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+
+/* Selects get the platform arrow back, since appearance:none strips it and a
+   select with no affordance reads as a disabled text field. */
+select.input {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 1.15rem) 1.25rem, calc(100% - 0.8rem) 1.25rem;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+
+/* The add button must not sit under the home indicator, and must not cover the
+   last row of the list when the list is short. */
+@supports (padding: max(0px)) {
+  .fab {
+    bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+  }
+}
+
+/* A text selection inside a sheet should not be interpreted as a drag on the
+   page behind it. */
+.sheet__scrim {
+  touch-action: none;
+}

@@ -15,12 +15,31 @@ import { useEffect, useRef } from 'react';
 export default function Sheet({ title, onClose, children }) {
   const panel = useRef(null);
 
+  /**
+   * `onClose` is an inline arrow in every caller, so it is a different function
+   * on every render. Depending on it made this effect tear down and re-run on
+   * each keystroke, and the `focus()` below then pulled focus out of whatever
+   * field was being typed in — which on a phone closes the keyboard after every
+   * single letter.
+   *
+   * So the effect runs once, and the handler reads the latest `onClose` through
+   * a ref instead of being rebound.
+   */
+  const latestClose = useRef(onClose);
+  latestClose.current = onClose;
+
   useEffect(() => {
     const onKey = (event) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') latestClose.current();
     };
     document.addEventListener('keydown', onKey);
-    panel.current?.focus();
+
+    // Only take focus if it is not already inside the sheet. The first field of
+    // a form autofocuses itself, and stealing that back would pop the keyboard
+    // open and shut again.
+    if (!panel.current?.contains(document.activeElement)) {
+      panel.current?.focus({ preventScroll: true });
+    }
 
     const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';
@@ -28,7 +47,7 @@ export default function Sheet({ title, onClose, children }) {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <>
