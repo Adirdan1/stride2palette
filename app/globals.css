@@ -76,10 +76,16 @@
   --break: #a52f28;
   --break-wash: #f8e2dd;
 
-  /* The mark's own tones, because a palette drawn in the accent alone is a
-     green blob. Board, and the glaze of light across it. */
-  --mark-board: #7a5230;
-  --mark-glaze: #d9b98a;
+  /* The mark's own tones. The board is light and the rim beneath it darker;
+     the paint is bright. These are deliberately NOT the text-safe accents — a
+     colour that clears 4.5:1 on cream is dark by construction, and four dark
+     dabs on a board vanish in greyscale. Paint is a graphic, not text. */
+  --mark-board: #c79a63;
+  --mark-rim: #8a6440;
+  --paint-pasta: #f2e2c4;
+  --paint-ragu: #d94a35;
+  --paint-cheese: #e8a93c;
+  --paint-basil: #6aab4a;
 
   --radius-sm: 6px;
   --radius: 12px;
@@ -127,8 +133,10 @@
     --break: #ef7d64;
     --break-wash: #2e1712;
 
-    --mark-board: #8a6440;
-    --mark-glaze: #c9a877;
+    /* The board is pulled down a little so it does not glare on near-black,
+       and the paint stays as it is — it is already bright enough to read. */
+    --mark-board: #b98c58;
+    --mark-rim: #6d4c2e;
 
     /* On a dark ground a shadow does nothing. Depth comes from the surface
        being lighter than the page instead. */
@@ -260,18 +268,15 @@ input, select, textarea {
 /* ==========================================================================
    The mark — an artist's palette, in three tonal layers.
 
-   The board, the glaze of light across it, and the paint. The thumb hole is
-   what makes an oval read as a palette at 32px, so it is punched with
-   fill-rule: evenodd rather than painted in the background colour — it stays a
-   hole on whatever surface the mark sits on.
+   Board, rim, paint. See app/components/Mark.js for why the silhouette needs
+   its waist and why the board is light rather than dark.
 
-   The three blobs are the paints and the lasagna at once: ragù, cheese, basil.
-   Each breathes on its own period so the motion never looks synchronised, and
-   the whole thing sits inside a reduced-motion guard.
+   Each dab breathes on its own period so the motion never looks synchronised,
+   and the whole thing sits inside a reduced-motion guard.
 
    `.palette--clean` is the null condition — no opening date. The paint is gone
    and the board drops to the line tokens, so it reads as an unused palette in
-   greyscale before colour is considered. What disappears is form, not hue.
+   greyscale before colour is considered.
    ========================================================================== */
 
 .palette {
@@ -281,53 +286,41 @@ input, select, textarea {
   overflow: visible;
 }
 
-.palette__board {
-  fill: var(--mark-board);
-}
+.palette__board { fill: var(--mark-board); }
+.palette__rim { fill: var(--mark-rim); }
 
-.palette__glaze {
-  fill: var(--mark-glaze);
-  opacity: 0.55;
-}
+.palette__dab--pasta { fill: var(--paint-pasta); }
+.palette__dab--ragu { fill: var(--paint-ragu); }
+.palette__dab--cheese { fill: var(--paint-cheese); }
+.palette__dab--basil { fill: var(--paint-basil); }
 
-.palette__blob--ragu { fill: var(--break); }
-.palette__blob--cheese { fill: var(--cheese); }
-.palette__blob--basil { fill: var(--basil-bright); }
-
-@media (prefers-color-scheme: dark) {
-  /* The blobs are paint, not text, so they take the brighter values rather than
-     the text-safe ones — on the dark board the text-safe pair goes muddy. */
-  .palette__blob--cheese { fill: #efbe5c; }
-  .palette__blob--ragu { fill: #e2614c; }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .palette__blob--ragu { animation: blob-wet 7s ease-in-out infinite; }
-  .palette__blob--cheese { animation: blob-wet 9s ease-in-out infinite; }
-  .palette__blob--basil { animation: blob-wet 11s ease-in-out infinite; }
-  .palette__glaze { animation: glaze-shift 13s ease-in-out infinite; }
-}
-
-@keyframes blob-wet {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(0.88); }
-}
-
-@keyframes glaze-shift {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 0.28; }
-}
-
-/* SVG transforms need an explicit box to scale about, or each blob scales from
-   the viewBox origin and slides across the board. */
-.palette__blob {
+/* SVG scales about the viewBox origin unless told otherwise, which would slide
+   each dab across the board instead of letting it breathe in place. */
+.palette__dab {
   transform-box: fill-box;
   transform-origin: center;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .palette__dab--pasta { animation: dab-wet 11s ease-in-out infinite; }
+  .palette__dab--ragu { animation: dab-wet 7s ease-in-out infinite; }
+  .palette__dab--cheese { animation: dab-wet 9s ease-in-out infinite; }
+  .palette__dab--basil { animation: dab-wet 13s ease-in-out infinite; }
+}
+
+@keyframes dab-wet {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(0.88); }
+}
+
+/* Unused, not invisible. The first attempt used --line for the board, which on
+   cream paper is so close to the ground that the mark all but disappeared — the
+   null state has to still read as a palette, or the hero simply looks broken
+   before an opening date is set. --line-strong carries the shape and --ink-3
+   keeps the rim as an edge. */
 .palette--clean .palette__board { fill: var(--line-strong); }
-.palette--clean .palette__glaze { fill: var(--line); opacity: 0.5; animation: none; }
-.palette--clean .palette__blob { display: none; }
+.palette--clean .palette__rim { fill: var(--ink-3); opacity: 0.4; }
+.palette--clean .palette__dab { display: none; }
 
 .mark--hero {
   width: 3.25rem;
