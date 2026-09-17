@@ -7,6 +7,7 @@ import {
   issueSession,
   timingSafeEqual,
   verifyPin,
+  matchesSecret,
   verifySession,
 } from '../lib/auth.js';
 
@@ -151,5 +152,29 @@ describe('hashSessionToken', () => {
     const hashed = await hashSessionToken(token);
     expect(hashed).not.toContain(USER);
     expect(hashed.length).toBeLessThan(token.length);
+  });
+});
+
+describe('matchesSecret', () => {
+  it('matches the configured value', async () => {
+    expect(await matchesSecret('abcdef123456', 'abcdef123456')).toBe(true);
+  });
+
+  it('tolerates whitespace on either side', async () => {
+    // A pasted dashboard value and a key typed on a phone both routinely pick
+    // up a trailing newline or space.
+    expect(await matchesSecret(' abcdef123456', 'abcdef123456')).toBe(true);
+    expect(await matchesSecret('abcdef123456\n', 'abcdef123456')).toBe(true);
+    expect(await matchesSecret('abcdef123456', '  abcdef123456\n')).toBe(true);
+    expect(await matchesSecret('\tabcdef123456 ', '\nabcdef123456\t')).toBe(true);
+  });
+
+  it('still rejects a different secret, and whitespace inside one', async () => {
+    expect(await matchesSecret('abcdef123457', 'abcdef123456')).toBe(false);
+    expect(await matchesSecret('abcdef 123456', 'abcdef123456')).toBe(false);
+    expect(await matchesSecret('', 'abcdef123456')).toBe(false);
+    expect(await matchesSecret('abcdef123456', '')).toBe(false);
+    expect(await matchesSecret(null, 'abcdef123456')).toBe(false);
+    expect(await matchesSecret('abcdef123456', undefined)).toBe(false);
   });
 });
