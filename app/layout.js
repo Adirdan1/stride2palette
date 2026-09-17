@@ -36,8 +36,8 @@ export const viewport = {
   // this, `100dvh` keeps counting the area the keyboard is covering.
   interactiveWidget: 'resizes-content',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f7f4ee' },
-    { media: '(prefers-color-scheme: dark)', color: '#131210' },
+    { media: '(prefers-color-scheme: light)', color: '#f9f2e3' },
+    { media: '(prefers-color-scheme: dark)', color: '#14100c' },
   ],
 };
 

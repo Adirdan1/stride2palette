@@ -8,6 +8,7 @@ import ItemForm, { emptyItem } from './ItemForm.js';
 import ItemRow from './ItemRow.js';
 import ItemSheet from './ItemSheet.js';
 import Mark from './Mark.js';
+import PullToRefresh from './PullToRefresh.js';
 import SettingsSheet from './SettingsSheet.js';
 import Sheet from './Sheet.js';
 
@@ -118,6 +119,11 @@ export default function Board({ today, settings, users, bands, budget, hero, pay
 
   return (
     <main className="shell">
+      {/* Pull down at the top to re-read the board. Every derived value is
+          recomputed on the server, so this is also how a second person's edits
+          reach your screen. */}
+      <PullToRefresh />
+
       <header className="topbar">
         <span className="brand">
           Palette<span className="brand__mark">.</span>

@@ -1,27 +1,28 @@
 /*
- * stride2palette design language — "Threshold".
+ * stride2palette design language — "Lasagna".
  *
- * The app is about one transition: a room that is not a business yet becoming
- * one. Everything below follows from that.
+ * The venue sells lasagna, and the app is called Palette, so the system is both:
+ * an artist's palette loaded with the colours of a lasagna. That is not a joke
+ * at the expense of legibility — it produces a genuinely good warm palette, and
+ * every colour still earns its place by meaning something.
  *
- *   1. The door is the hero. Every screen has exactly one thing that is biggest,
- *      and here it is how long until the doors open. Nothing competes with it.
- *      Without an opening date it becomes the count of what is still in the way —
- *      never a countdown to a date nobody chose.
+ *   1. The palette is the hero. Every screen has exactly one thing that is
+ *      biggest, and here it is how long until the doors open. Without an opening
+ *      date it becomes the count of what is still in the way, and the mark's
+ *      paint disappears — never a countdown to a date nobody chose.
  *
- *   2. The ground is the collection's warm paper, not grey, so the app feels
- *      hospitable before a single accent is spent. There is one accent — bay —
- *      and it means *cleared*: a permit granted, a thing no longer in your way.
+ *   2. The ground is pasta and ricotta, not grey. Warm before a single accent is
+ *      spent. There is one accent — basil — and it means *cleared*: a permit
+ *      granted, a thing no longer in your way.
  *
  *   3. Form carries meaning before colour does. The spine down each row is the
  *      signalling system: solid is on track, segmented is overdue, dotted is
  *      waiting on somebody else, hairline is undated, none is closed. Read the
- *      board in greyscale and it still parses. Colour is reinforcement, never
- *      the only signal. Run that check on any new row state.
+ *      board in greyscale and it still parses. Run that check on any new state.
  *
  *   4. The spine survives. Carried over from Stride, doing three jobs here: the
- *      rail down each row, the budget bar under the hero, and the light under
- *      the door in the mark. Same grammar in three orientations.
+ *      rail down each row, the budget bar under the hero, and the pull-to-
+ *      refresh mark. Same grammar in three orientations.
  *
  *   5. Soft geometry, honest depth. Small consistent radii. One shadow, on the
  *      hero panel only. Everything else is a hairline.
@@ -30,8 +31,9 @@
  * component below this header knows which theme it is in.
  *
  * Contrast was measured, not guessed. Every colour that carries text clears
- * 4.5:1 on both --surface and --paper in both themes; the tightest is brass at
- * 4.60:1 on light paper.
+ * 4.5:1 on both --surface and --paper in both themes. Cheese is the tightest at
+ * 5.01:1 on light paper, and took three attempts — golds are hard on cream, and
+ * the obvious melted-cheese yellows all fail.
  */
 
 /* ==========================================================================
@@ -39,54 +41,54 @@
    ========================================================================== */
 
 :root {
-  /* The collection's shared ground. Identical in Stride and stride2do; these
-     are the collection's tokens, not this app's. */
-  --paper: #f7f4ee;
-  --surface: #fffdfa;
-  --sunken: #efe9df;
+  /* The ground: a pasta sheet, and ricotta on top of it. */
+  --paper: #f9f2e3;
+  --surface: #fffaf0;
+  --sunken: #efe3cc;
 
-  --ink: #1b1a17;
-  --ink-2: #57534b;
+  /* Text. Roasted brown-black rather than grey — a neutral ink on this warm a
+     ground reads as blue. */
+  --ink: #241a12;
+  --ink-2: #5c4a38;
   /* Not lighter than this. --ink-3 carries every eyebrow, hint and unit in the
-     app, all of it small text, and anything paler drops under 4.5:1. */
-  --ink-3: #6f6a61;
+     app, all of it small text. This is 5.22:1 on paper. */
+  --ink-3: #766246;
 
-  --line: #e5ded2;
-  --line-strong: #cec4b3;
+  --line: #e7d9c0;
+  --line-strong: #cdb894;
 
-  /* The accent. Bay means *cleared*.
-     This collection's skill warns that green reads as "done" and should not be
-     reached for lazily. Here that inherited meaning is the correct one rather
-     than a shortcut: the whole app is a list of approvals that are either
-     granted or not, and cleared is the literal thing the colour has to say. */
-  --bay: #2f6b4f;
-  --bay-bright: #3d8a66;
-  --bay-wash: #e2eee7;
+  /* The accent. Basil means *cleared*.
+     Green reads as "done", which is the correct meaning here rather than a lazy
+     one: the whole app is a list of approvals that are either granted or not.
+     And basil belongs in the dish. */
+  --basil: #3f6b33;
+  --basil-bright: #4f8a40;
+  --basil-wash: #e4eddd;
 
-  /* Brass is a deadline closing — soon, not yet wrong. */
-  --brass: #8a6a1f;
-  --brass-wash: #f4ebd6;
+  /* Baked cheese. A deadline closing — soon, not yet wrong. */
+  --cheese: #8a6008;
+  --cheese-wash: #f7ecd3;
 
-  /* Reserved across the collection, and it means the same thing in all three
-     apps: this went wrong. Here that is overdue. Only ever a thin mark or a
+  /* Reserved across the collection, and it means the same in all three apps:
+     this went wrong. Here that is overdue — and it is already the colour of the
+     ragù, which is a happy accident worth keeping. Only ever a thin mark or a
      word, never a fill, which is what keeps it from reading as the accent. */
   --break: #a52f28;
-  --break-wash: #f6e3e1;
+  --break-wash: #f8e2dd;
 
-  /* The mark's own three tones, because a door rendered in the accent alone is
-     a green rectangle. */
-  --door-frame: #2a4d3b;
-  --door-leaf: #4b8a6b;
-  --door-light: #e8c98a;
+  /* The mark's own tones, because a palette drawn in the accent alone is a
+     green blob. Board, and the glaze of light across it. */
+  --mark-board: #7a5230;
+  --mark-glaze: #d9b98a;
 
   --radius-sm: 6px;
   --radius: 12px;
   --radius-lg: 20px;
   --radius-pill: 999px;
 
-  /* The only shadow in the system, and warm rather than black — a black shadow
-     on warm paper reads as dirt. */
-  --lift: 0 1px 2px rgba(69, 48, 28, 0.05), 0 8px 24px -12px rgba(69, 48, 28, 0.18);
+  /* The only shadow in the system, and it is warm rather than black — a black
+     shadow on this ground reads as dirt. */
+  --lift: 0 1px 2px rgba(74, 48, 24, 0.05), 0 8px 24px -12px rgba(74, 48, 24, 0.2);
 
   --measure: 30rem;
   --pad: 1.15rem;
@@ -100,34 +102,33 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Warm near-black, not slate. The same paper with the lights off. */
-    --paper: #131210;
-    --surface: #1c1a17;
-    /* Lighter than the surface it sits on, not darker. A recessed token darker
+    /* The same dish, baked darker. Warm near-black, never slate. */
+    --paper: #14100c;
+    --surface: #1e1811;
+    /* Lighter than the surface it sits on, not darker — a recessed token darker
        than its card is invisible on a dark page. */
-    --sunken: #2b2926;
+    --sunken: #2d2519;
 
-    --ink: #f4efe6;
-    --ink-2: #aca596;
-    --ink-3: #948c7d;
+    --ink: #f6ecda;
+    --ink-2: #b6a68c;
+    --ink-3: #9b8a70;
 
-    --line: #2d2925;
-    --line-strong: #443d34;
+    --line: #302719;
+    --line-strong: #4a3d28;
 
-    /* Lifted, because the same bay on near-black is muddy and fails contrast. */
-    --bay: #6fbf93;
-    --bay-bright: #6fbf93;
-    --bay-wash: #15271d;
+    /* Lifted, because the same basil on near-black is muddy and fails contrast. */
+    --basil: #8cc47a;
+    --basil-bright: #8cc47a;
+    --basil-wash: #172316;
 
-    --brass: #d4a63c;
-    --brass-wash: #2b2310;
+    --cheese: #e3b24c;
+    --cheese-wash: #2a2110;
 
-    --break: #e8756a;
-    --break-wash: #2e1614;
+    --break: #ef7d64;
+    --break-wash: #2e1712;
 
-    --door-frame: #2f5943;
-    --door-leaf: #57a37e;
-    --door-light: #f0d59c;
+    --mark-board: #8a6440;
+    --mark-glaze: #c9a877;
 
     /* On a dark ground a shadow does nothing. Depth comes from the surface
        being lighter than the page instead. */
@@ -182,7 +183,7 @@ input, select, textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--bay);
+  outline: 2px solid var(--basil);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -236,7 +237,7 @@ input, select, textarea {
 /* The collection's wordmark: the app name in the display face, followed by a
    full stop in the accent. */
 .brand__mark {
-  color: var(--bay);
+  color: var(--basil);
 }
 
 .whoami {
@@ -257,67 +258,76 @@ input, select, textarea {
 }
 
 /* ==========================================================================
-   The mark — a doorway, in three tonal layers.
-   
-   The app is about one transition, so the mark is the threshold itself: a frame,
-   a leaf standing ajar, and the light coming through the gap. Each layer runs
-   its own slow loop at a different period, so the motion never looks
-   synchronised.
-   
-   The null state is `.door--shut`: no opening date is set, the leaf closes flush
-   and the light goes out. It differs in form and weight, not only colour — the
-   gap is what disappears.
+   The mark — an artist's palette, in three tonal layers.
+
+   The board, the glaze of light across it, and the paint. The thumb hole is
+   what makes an oval read as a palette at 32px, so it is punched with
+   fill-rule: evenodd rather than painted in the background colour — it stays a
+   hole on whatever surface the mark sits on.
+
+   The three blobs are the paints and the lasagna at once: ragù, cheese, basil.
+   Each breathes on its own period so the motion never looks synchronised, and
+   the whole thing sits inside a reduced-motion guard.
+
+   `.palette--clean` is the null condition — no opening date. The paint is gone
+   and the board drops to the line tokens, so it reads as an unused palette in
+   greyscale before colour is considered. What disappears is form, not hue.
    ========================================================================== */
 
-.door {
+.palette {
   display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.door__frame {
-  fill: none;
-  stroke: var(--door-frame);
-  stroke-width: 3.5;
-  stroke-linejoin: round;
+.palette__board {
+  fill: var(--mark-board);
 }
 
-.door__leaf {
-  fill: var(--door-leaf);
-  transform-origin: 14px 50px;
+.palette__glaze {
+  fill: var(--mark-glaze);
+  opacity: 0.55;
 }
 
-.door__light {
-  fill: var(--door-light);
-  opacity: 0.92;
+.palette__blob--ragu { fill: var(--break); }
+.palette__blob--cheese { fill: var(--cheese); }
+.palette__blob--basil { fill: var(--basil-bright); }
+
+@media (prefers-color-scheme: dark) {
+  /* The blobs are paint, not text, so they take the brighter values rather than
+     the text-safe ones — on the dark board the text-safe pair goes muddy. */
+  .palette__blob--cheese { fill: #efbe5c; }
+  .palette__blob--ragu { fill: #e2614c; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .door__leaf {
-    animation: door-swing 9s ease-in-out infinite;
-  }
-
-  .door__light {
-    animation: door-glow 6.5s ease-in-out infinite;
-  }
+  .palette__blob--ragu { animation: blob-wet 7s ease-in-out infinite; }
+  .palette__blob--cheese { animation: blob-wet 9s ease-in-out infinite; }
+  .palette__blob--basil { animation: blob-wet 11s ease-in-out infinite; }
+  .palette__glaze { animation: glaze-shift 13s ease-in-out infinite; }
 }
 
-@keyframes door-swing {
-  0%, 100% { transform: scaleX(1); }
-  50%      { transform: scaleX(0.88); }
+@keyframes blob-wet {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(0.88); }
 }
 
-@keyframes door-glow {
-  0%, 100% { opacity: 0.92; }
-  50%      { opacity: 0.62; }
+@keyframes glaze-shift {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.28; }
 }
 
-/* The null condition. Form first: the gap closes and the light is gone, so it
-   reads as shut in greyscale before any colour is considered. */
-.door--shut .door__frame { stroke: var(--line-strong); }
-.door--shut .door__leaf  { fill: var(--line); animation: none; transform: none; }
-.door--shut .door__light { display: none; }
+/* SVG transforms need an explicit box to scale about, or each blob scales from
+   the viewBox origin and slides across the board. */
+.palette__blob {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.palette--clean .palette__board { fill: var(--line-strong); }
+.palette--clean .palette__glaze { fill: var(--line); opacity: 0.5; animation: none; }
+.palette--clean .palette__blob { display: none; }
 
 .mark--hero {
   width: 3.25rem;
@@ -369,7 +379,7 @@ input, select, textarea {
   font-size: 0.8rem;
 }
 
-.hero--open .hero__figure { color: var(--bay); }
+.hero--open .hero__figure { color: var(--basil); }
 .hero--late .hero__figure { color: var(--break); }
 
 /* ==========================================================================
@@ -420,7 +430,7 @@ input, select, textarea {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: var(--radius-pill);
-  background: var(--bay-bright);
+  background: var(--basil-bright);
 }
 
 .budget__over {
@@ -441,7 +451,7 @@ input, select, textarea {
 }
 
 .budget__over-label { color: var(--break); font-weight: 600; }
-.budget__under-label { color: var(--bay); font-weight: 600; }
+.budget__under-label { color: var(--basil); font-weight: 600; }
 
 /* ==========================================================================
    Bands
@@ -554,7 +564,7 @@ button.row:hover {
 }
 
 .row--now::before {
-  background: var(--bay);
+  background: var(--basil);
 }
 
 .row--overdue::before {
@@ -568,7 +578,7 @@ button.row:hover {
 .row--waiting::before {
   /* Dotted — a different rhythm from the segments above, deliberately. */
   background: repeating-linear-gradient(
-    var(--brass) 0 3px,
+    var(--cheese) 0 3px,
     transparent 3px 7px
   );
 }
@@ -636,7 +646,7 @@ button.row:hover {
 }
 
 .due--overdue { color: var(--break); font-weight: 600; }
-.due--soon { color: var(--brass); font-weight: 600; }
+.due--soon { color: var(--cheese); font-weight: 600; }
 
 /* ==========================================================================
    Chips
@@ -664,9 +674,9 @@ button.chip {
 }
 
 button.chip[aria-pressed='true'] {
-  border-color: var(--bay);
-  background: var(--bay-wash);
-  color: var(--bay);
+  border-color: var(--basil);
+  background: var(--basil-wash);
+  color: var(--basil);
   font-weight: 600;
 }
 
@@ -711,12 +721,12 @@ button.chip[aria-pressed='true'] {
 
 .btn--primary {
   border-color: transparent;
-  background: var(--bay);
-  color: #fffdfa;
+  background: var(--basil);
+  color: #fffaf0;
 }
 
 @media (prefers-color-scheme: dark) {
-  .btn--primary { color: #10231a; }
+  .btn--primary { color: #12210d; }
 }
 
 .btn--ghost {
@@ -808,7 +818,7 @@ textarea.input {
   z-index: 40;
   border: 0;
   padding: 0;
-  background: rgba(27, 26, 23, 0.4);
+  background: rgba(36, 26, 18, 0.45);
   backdrop-filter: blur(2px);
 }
 
@@ -881,15 +891,15 @@ textarea.input {
   padding: 0 1.25rem;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--bay);
-  color: #fffdfa;
+  background: var(--basil);
+  color: #fffaf0;
   font-size: 0.95rem;
   font-weight: 600;
-  box-shadow: 0 2px 4px rgba(69, 48, 28, 0.12), 0 12px 28px -12px rgba(69, 48, 28, 0.4);
+  box-shadow: 0 2px 4px rgba(74, 48, 24, 0.12), 0 12px 28px -12px rgba(74, 48, 24, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
-  .fab { color: #10231a; box-shadow: none; }
+  .fab { color: #12210d; box-shadow: none; }
 }
 
 /* Payments inside the item sheet. */
@@ -914,7 +924,7 @@ textarea.input {
 
 .ledger__when { color: var(--ink-3); font-size: 0.78rem; }
 .ledger__amount { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
-.ledger__amount--refund { color: var(--bay); }
+.ledger__amount--refund { color: var(--basil); }
 .ledger__vat { color: var(--ink-3); font-size: 0.74rem; }
 
 /* ==========================================================================
@@ -1054,4 +1064,77 @@ select.input {
    page behind it. */
 .sheet__scrim {
   touch-action: none;
+}
+
+/* ==========================================================================
+   Pull to refresh
+
+   The spine again, in its third orientation: a short vertical rule that grows
+   when the gesture arms and becomes a travelling dashed line while the server
+   works. Same grammar as the row rails and the budget bar.
+
+   Adapted from Stride, which is the collection's implementation of this.
+   ========================================================================== */
+
+.ptr {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.ptr__mark {
+  display: block;
+  width: var(--spine);
+  height: 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+  transition: height 140ms ease-out, background 140ms linear;
+}
+
+.ptr--armed .ptr__mark {
+  height: 2rem;
+  background: var(--basil);
+}
+
+.ptr__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ptr--armed .ptr__label {
+  color: var(--basil);
+}
+
+/* Segmented while it works, so the state differs in form and not only in
+   colour — the same rule the overdue row spine follows. */
+.ptr--working .ptr__mark {
+  height: 2rem;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--basil) 0 5px,
+    transparent 5px 10px
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ptr--working .ptr__mark {
+    animation: ptr-travel 700ms linear infinite;
+  }
+}
+
+@keyframes ptr-travel {
+  from { background-position: 0 0; }
+  to   { background-position: 0 10px; }
 }

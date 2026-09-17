@@ -575,7 +575,7 @@ Dark redefines tokens only, and sets `--lift: none`.
 | --- | --- | --- | --- |
 | Stride | `--ember #bd5417` the streak | `--frost #2f75a0` freezes | `--break #a52f28` a miss |
 | stride2do | `--plum #6b3f6b` | — | `--break #a52f28` slipped |
-| stride2palette | `--bay #2f6b4f` cleared | `--brass #8a6a1f` a deadline closing | `--break #a52f28` overdue |
+| stride2palette | `--basil #3f6b33` cleared | `--cheese #8a6008` a deadline closing | `--break #a52f28` overdue, and the ragù |
 
 `--break` appears to be shared across the collection and to mean the same thing
 in both: *this went wrong*. Treat it as reserved.
@@ -704,17 +704,24 @@ states means *do something*, the other means *you have done your part*. Collapsi
 them into `doing` would make the board unable to answer the only question it is
 really for.
 
-**5. The accent is `--bay #2f6b4f`, and it means *cleared*.** 6.20:1 on `--surface`
-and 5.73:1 on `--paper`, which puts it inside the band the collection's other
-accents occupy (ember 4.65, frost 4.96, break 6.81, plum 8.12). The dark-mode lift
-is `#6fbf93`, 7.90:1 on the dark surface.
+**5. The design language is "Lasagna", and the accent is `--basil #3f6b33`,
+meaning *cleared*.** Adir asked for the venue's dish to be the palette, and it
+turns out to be a good one: pasta and ricotta for the ground, basil for the
+accent, baked cheese for a closing deadline, and the ragù is already the exact
+red the collection reserves for `--break`. So overdue is tomato without anything
+being bent to make it so.
+
+Measured, not guessed: basil is 6.00:1 on surface and 5.60:1 on paper, cheese
+5.37 and 5.01, break 6.65 and 6.20. **Cheese took three attempts.** Every
+obvious melted-cheese yellow fails on a cream ground — `#a8761a` is 3.57:1 on
+paper — and the answer was to go much darker than looks right in isolation. If
+another app in this collection wants a gold on a warm ground, start around
+`#8a6008` rather than working down from a yellow.
 
 This file warns that green reads as *done* and should not be reached for lazily.
-Here that inherited meaning is the correct one rather than a shortcut: the entire
-app is a list of approvals, permits and licences that are either granted or not,
-and *cleared* is the literal thing the colour has to say. `--brass #8a6a1f` is the
-second colour and means a deadline closing. `--break` keeps its reserved meaning,
-which here is overdue.
+Here the inherited meaning is the correct one: the app is a list of approvals
+that are either granted or not, and *cleared* is the literal thing the colour has
+to say.
 
 **6. One screen.** `/` is the Launch Board; `/unlock` is the gate. Settings and
 people management live in sheets on that screen rather than in pages of their own.
@@ -747,6 +754,28 @@ people trying to do their jobs rather than on the person you are worried about.
 over shortening the cookie** — and say plainly that revoking is a thing somebody
 has to remember, where an expiry is not.
 
-**10. Still open.** The mark is not designed yet: it must be a single form in three
-tonal layers with a distinct null state, per the recovered design language, and
-whatever it is has to be checked in greyscale before it ships.
+**10. The mark is an artist's palette**, matching the app's name, in the three
+tonal layers the collection requires: the board, the glaze of light across it,
+and the paint. The three blobs are the paints and the lasagna layers at once —
+ragù, cheese, basil — so the app's whole colour system sits on its own logo.
+
+The thumb hole is what makes an oval read as a palette at 32px, so it is punched
+with `fill-rule: evenodd` rather than painted in the background colour; a dot in
+the page colour stops being a hole the moment the mark is placed on a card. The
+null condition is `.palette--clean`: the paint disappears and the board drops to
+the line tokens, so it reads as an unused palette in greyscale before colour is
+considered.
+
+The icon summit is the same palette, and the climb underneath it is unchanged.
+Both of the family's drawing lessons applied again: the board had to be sunk
+into the live bar to avoid a lollipop, and the thumb hole had to be punched in
+the ground colour to be visible at 192px.
+
+**11. Pull-to-refresh is adopted from Stride rather than reinvented.** Adir asked
+for it and Stride's `PullToRefresh.js` already solves it well: square-root
+resistance on the drag, `preventDefault` only once the gesture is known to be
+ours, and `router.refresh()` to re-run the server components. It earns more here
+than it does in Stride, because this app has several people in it — pulling down
+is how somebody else's edits reach your screen. The indicator is the spine in its
+third orientation, and it segments while working rather than only changing
+colour, following the same form-before-colour rule as the row rails.
