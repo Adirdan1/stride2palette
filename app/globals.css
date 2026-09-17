@@ -1,0 +1,973 @@
+/*
+ * stride2palette design language — "Threshold".
+ *
+ * The app is about one transition: a room that is not a business yet becoming
+ * one. Everything below follows from that.
+ *
+ *   1. The door is the hero. Every screen has exactly one thing that is biggest,
+ *      and here it is how long until the doors open. Nothing competes with it.
+ *      Without an opening date it becomes the count of what is still in the way —
+ *      never a countdown to a date nobody chose.
+ *
+ *   2. The ground is the collection's warm paper, not grey, so the app feels
+ *      hospitable before a single accent is spent. There is one accent — bay —
+ *      and it means *cleared*: a permit granted, a thing no longer in your way.
+ *
+ *   3. Form carries meaning before colour does. The spine down each row is the
+ *      signalling system: solid is on track, segmented is overdue, dotted is
+ *      waiting on somebody else, hairline is undated, none is closed. Read the
+ *      board in greyscale and it still parses. Colour is reinforcement, never
+ *      the only signal. Run that check on any new row state.
+ *
+ *   4. The spine survives. Carried over from Stride, doing three jobs here: the
+ *      rail down each row, the budget bar under the hero, and the light under
+ *      the door in the mark. Same grammar in three orientations.
+ *
+ *   5. Soft geometry, honest depth. Small consistent radii. One shadow, on the
+ *      hero panel only. Everything else is a hairline.
+ *
+ * Light and dark are the same design. Only the tokens in :root change — no
+ * component below this header knows which theme it is in.
+ *
+ * Contrast was measured, not guessed. Every colour that carries text clears
+ * 4.5:1 on both --surface and --paper in both themes; the tightest is brass at
+ * 4.60:1 on light paper.
+ */
+
+/* ==========================================================================
+   Tokens
+   ========================================================================== */
+
+:root {
+  /* The collection's shared ground. Identical in Stride and stride2do; these
+     are the collection's tokens, not this app's. */
+  --paper: #f7f4ee;
+  --surface: #fffdfa;
+  --sunken: #efe9df;
+
+  --ink: #1b1a17;
+  --ink-2: #57534b;
+  /* Not lighter than this. --ink-3 carries every eyebrow, hint and unit in the
+     app, all of it small text, and anything paler drops under 4.5:1. */
+  --ink-3: #6f6a61;
+
+  --line: #e5ded2;
+  --line-strong: #cec4b3;
+
+  /* The accent. Bay means *cleared*.
+     This collection's skill warns that green reads as "done" and should not be
+     reached for lazily. Here that inherited meaning is the correct one rather
+     than a shortcut: the whole app is a list of approvals that are either
+     granted or not, and cleared is the literal thing the colour has to say. */
+  --bay: #2f6b4f;
+  --bay-bright: #3d8a66;
+  --bay-wash: #e2eee7;
+
+  /* Brass is a deadline closing — soon, not yet wrong. */
+  --brass: #8a6a1f;
+  --brass-wash: #f4ebd6;
+
+  /* Reserved across the collection, and it means the same thing in all three
+     apps: this went wrong. Here that is overdue. Only ever a thin mark or a
+     word, never a fill, which is what keeps it from reading as the accent. */
+  --break: #a52f28;
+  --break-wash: #f6e3e1;
+
+  /* The mark's own three tones, because a door rendered in the accent alone is
+     a green rectangle. */
+  --door-frame: #2a4d3b;
+  --door-leaf: #4b8a6b;
+  --door-light: #e8c98a;
+
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* The only shadow in the system, and warm rather than black — a black shadow
+     on warm paper reads as dirt. */
+  --lift: 0 1px 2px rgba(69, 48, 28, 0.05), 0 8px 24px -12px rgba(69, 48, 28, 0.18);
+
+  --measure: 30rem;
+  --pad: 1.15rem;
+  --spine: 3px;
+
+  --font-display: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-archivo), system-ui, -apple-system, sans-serif;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Warm near-black, not slate. The same paper with the lights off. */
+    --paper: #131210;
+    --surface: #1c1a17;
+    /* Lighter than the surface it sits on, not darker. A recessed token darker
+       than its card is invisible on a dark page. */
+    --sunken: #2b2926;
+
+    --ink: #f4efe6;
+    --ink-2: #aca596;
+    --ink-3: #948c7d;
+
+    --line: #2d2925;
+    --line-strong: #443d34;
+
+    /* Lifted, because the same bay on near-black is muddy and fails contrast. */
+    --bay: #6fbf93;
+    --bay-bright: #6fbf93;
+    --bay-wash: #15271d;
+
+    --brass: #d4a63c;
+    --brass-wash: #2b2310;
+
+    --break: #e8756a;
+    --break-wash: #2e1614;
+
+    --door-frame: #2f5943;
+    --door-leaf: #57a37e;
+    --door-light: #f0d59c;
+
+    /* On a dark ground a shadow does nothing. Depth comes from the surface
+       being lighter than the page instead. */
+    --lift: none;
+
+    color-scheme: dark;
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p { margin: 0; }
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--bay);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================================
+   Shell
+   ========================================================================== */
+
+.shell {
+  max-width: var(--measure);
+  margin: 0 auto;
+  /* 16px side gutter at phone width, and the safe-area inset on top of it so
+     nothing hides under a home indicator. */
+  padding: 1.25rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+/* ==========================================================================
+   Topbar and wordmark
+   ========================================================================== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+/* The collection's wordmark: the app name in the display face, followed by a
+   full stop in the accent. */
+.brand__mark {
+  color: var(--bay);
+}
+
+.whoami {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   The mark — a doorway, in three tonal layers.
+   
+   The app is about one transition, so the mark is the threshold itself: a frame,
+   a leaf standing ajar, and the light coming through the gap. Each layer runs
+   its own slow loop at a different period, so the motion never looks
+   synchronised.
+   
+   The null state is `.door--shut`: no opening date is set, the leaf closes flush
+   and the light goes out. It differs in form and weight, not only colour — the
+   gap is what disappears.
+   ========================================================================== */
+
+.door {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.door__frame {
+  fill: none;
+  stroke: var(--door-frame);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+
+.door__leaf {
+  fill: var(--door-leaf);
+  transform-origin: 14px 50px;
+}
+
+.door__light {
+  fill: var(--door-light);
+  opacity: 0.92;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .door__leaf {
+    animation: door-swing 9s ease-in-out infinite;
+  }
+
+  .door__light {
+    animation: door-glow 6.5s ease-in-out infinite;
+  }
+}
+
+@keyframes door-swing {
+  0%, 100% { transform: scaleX(1); }
+  50%      { transform: scaleX(0.88); }
+}
+
+@keyframes door-glow {
+  0%, 100% { opacity: 0.92; }
+  50%      { opacity: 0.62; }
+}
+
+/* The null condition. Form first: the gap closes and the light is gone, so it
+   reads as shut in greyscale before any colour is considered. */
+.door--shut .door__frame { stroke: var(--line-strong); }
+.door--shut .door__leaf  { fill: var(--line); animation: none; transform: none; }
+.door--shut .door__light { display: none; }
+
+.mark--hero {
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 auto 0.4rem;
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+
+.hero {
+  padding: 1.4rem var(--pad) 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--lift);
+  text-align: center;
+}
+
+.hero__eyebrow {
+  margin-bottom: 0.15rem;
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* The one thing on the screen that is biggest. */
+.hero__figure {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3.4rem, 17vw, 4.75rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero__unit {
+  margin-top: 0.1rem;
+  color: var(--ink-2);
+  font-size: 0.95rem;
+}
+
+.hero__meta {
+  margin-top: 0.15rem;
+  color: var(--ink-3);
+  font-size: 0.8rem;
+}
+
+.hero--open .hero__figure { color: var(--bay); }
+.hero--late .hero__figure { color: var(--break); }
+
+/* ==========================================================================
+   The budget spine
+   
+   The trail spine in its horizontal orientation. Planned is the track, actual is
+   the fill; over budget turns the overflow into --break so the bar reports the
+   overrun rather than silently capping at full.
+   ========================================================================== */
+
+.budget {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+
+.budget__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.budget__label {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.budget__figure {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget__bar {
+  position: relative;
+  height: var(--spine);
+  border-radius: var(--radius-pill);
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.budget__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-pill);
+  background: var(--bay-bright);
+}
+
+.budget__over {
+  position: absolute;
+  inset: 0 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--break);
+}
+
+.budget__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  color: var(--ink-3);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget__over-label { color: var(--break); font-weight: 600; }
+.budget__under-label { color: var(--bay); font-weight: 600; }
+
+/* ==========================================================================
+   Bands
+   
+   NOW / NEXT / WAITING / SOMEDAY / DONE, rather than a flat sort. Overdue folds
+   into NOW: a thing due last Tuesday is the same work as a thing due tomorrow,
+   just later, and a separate OVERDUE band makes the page longer without making
+   the decision easier.
+   
+   WAITING is its own band because unlike overdue it changes what you can do
+   about it, which is nothing. Keeping it out of NOW is what stops the actionable
+   list filling up with somebody else's move.
+   ========================================================================== */
+
+.band {
+  margin-top: 1.6rem;
+}
+
+.band__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+  padding: 0 0.15rem;
+}
+
+.band__title {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.band__count {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.band__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.band__empty {
+  padding: 0.85rem var(--pad);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-3);
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Rows
+   
+   The spine down the left edge is the signalling system, and it is form before
+   it is colour:
+   
+     solid bay        on track
+     segmented break  overdue
+     dotted brass     waiting on somebody else
+     hairline faint   undated
+     none             closed
+   
+   Overdue was solid --break to begin with, and in greyscale it was
+   indistinguishable from on-track: colour was doing all the work, which this
+   system forbids. Segmenting it fixed that. Waiting is dotted rather than
+   segmented so the two never read as the same rhythm.
+   ========================================================================== */
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem var(--pad) 0.7rem calc(var(--pad) + 0.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: left;
+}
+
+button.row {
+  appearance: none;
+  cursor: pointer;
+}
+
+button.row:hover {
+  border-color: var(--line-strong);
+}
+
+/* The spine. A pseudo-element rather than a border so the dash pattern can
+   change without the row's geometry moving. */
+.row::before {
+  content: '';
+  position: absolute;
+  top: 0.65rem;
+  bottom: 0.65rem;
+  left: 0.55rem;
+  width: var(--spine);
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+}
+
+.row--now::before {
+  background: var(--bay);
+}
+
+.row--overdue::before {
+  /* Segmented. The gaps are what make it legible without colour. */
+  background: repeating-linear-gradient(
+    var(--break) 0 5px,
+    transparent 5px 9px
+  );
+}
+
+.row--waiting::before {
+  /* Dotted — a different rhythm from the segments above, deliberately. */
+  background: repeating-linear-gradient(
+    var(--brass) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+.row--someday::before {
+  background: var(--line);
+}
+
+.row--closed::before {
+  background: transparent;
+}
+
+.row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.row__title {
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.row--closed .row__title {
+  color: var(--ink-3);
+}
+
+/* Dropped is struck through; done is not. Both are closed, but one happened and
+   the other did not, and that difference should survive a glance. */
+.row--dropped .row__title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  color: var(--ink-3);
+  font-size: 0.78rem;
+}
+
+.row__money {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+
+.row__spent {
+  font-weight: 600;
+}
+
+.row__planned {
+  color: var(--ink-3);
+}
+
+.row__over { color: var(--break); }
+
+.dot {
+  color: var(--line-strong);
+}
+
+.due--overdue { color: var(--break); font-weight: 600; }
+.due--soon { color: var(--brass); font-weight: 600; }
+
+/* ==========================================================================
+   Chips
+   ========================================================================== */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Every interactive target clears 44px, chips included. Stride's own chip is
+   2.5rem and quietly breaks that rule; this app holds the line. */
+button.chip {
+  appearance: none;
+}
+
+button.chip[aria-pressed='true'] {
+  border-color: var(--bay);
+  background: var(--bay-wash);
+  color: var(--bay);
+  font-weight: 600;
+}
+
+/* A label, not a target — inside a row it carries no tap of its own. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
+  color: var(--ink-3);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chipbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ==========================================================================
+   Buttons and fields
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 1.15rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.btn--primary {
+  border-color: transparent;
+  background: var(--bay);
+  color: #fffdfa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn--primary { color: #10231a; }
+}
+
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.btn--danger {
+  border-color: transparent;
+  background: transparent;
+  color: var(--break);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field__hint {
+  margin-top: 0.3rem;
+  color: var(--ink-3);
+  font-size: 0.76rem;
+}
+
+.input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.input::placeholder {
+  color: var(--ink-3);
+}
+
+textarea.input {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.notice {
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius);
+  background: var(--break-wash);
+  color: var(--break);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Sheet
+   
+   Settings and staff live in here rather than in pages of their own, which is
+   what keeps this a one-screen app.
+   ========================================================================== */
+
+.sheet__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  padding: 0;
+  background: rgba(27, 26, 23, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.sheet {
+  position: fixed;
+  z-index: 41;
+  inset: auto 0 0 0;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 1rem var(--pad) calc(1.25rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface);
+}
+
+@media (min-width: 34rem) {
+  .sheet {
+    inset: auto 50% 1rem auto;
+    width: var(--measure);
+    transform: translateX(50%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+}
+
+.sheet__grip {
+  width: 2.25rem;
+  height: 4px;
+  margin: 0 auto 0.9rem;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.sheet__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.sheet__section {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.sheet__actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.sheet__actions .btn { flex: 1; }
+
+/* The floating add button. */
+.fab {
+  position: fixed;
+  right: max(1rem, calc(50vw - var(--measure) / 2 + 1rem));
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  z-index: 30;
+  min-width: 3.5rem;
+  min-height: 3.5rem;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--bay);
+  color: #fffdfa;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(69, 48, 28, 0.12), 0 12px 28px -12px rgba(69, 48, 28, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  .fab { color: #10231a; box-shadow: none; }
+}
+
+/* Payments inside the item sheet. */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ledger__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.ledger__when { color: var(--ink-3); font-size: 0.78rem; }
+.ledger__amount { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ledger__amount--refund { color: var(--bay); }
+.ledger__vat { color: var(--ink-3); font-size: 0.74rem; }
+
+/* ==========================================================================
+   Unlock
+   ========================================================================== */
+
+.unlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100dvh;
+  max-width: 22rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.unlock__mark {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+}
+
+.unlock__title {
+  margin-bottom: 0.3rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.unlock__blurb {
+  margin-bottom: 1.5rem;
+  color: var(--ink-3);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.unlock__form > .notice { margin-bottom: 0.85rem; }
+
+/* ==========================================================================
+   Skeletons
+   ========================================================================== */
+
+.skeleton {
+  border-radius: var(--radius);
+  background: var(--sunken);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton { animation: pulse 1.6s ease-in-out infinite; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}

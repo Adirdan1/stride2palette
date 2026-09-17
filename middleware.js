@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SESSION_COOKIE, verifySession } from './lib/auth.js';
+import { SESSION_COOKIE, USER_HEADER, verifySession } from './lib/auth.js';
 
 /**
  * Everything is behind the gate except these.
@@ -7,18 +7,13 @@ import { SESSION_COOKIE, verifySession } from './lib/auth.js';
  * /api/auth is how you get a cookie in the first place, /api/bootstrap creates
  * the very first account (and refuses once one exists), and /unlock is where you
  * type the PIN.
- */
-const PUBLIC_PATHS = new Set(['/unlock', '/api/auth', '/api/bootstrap']);
-
-/**
- * How the verified identity reaches the routes.
  *
- * Middleware has already done the HMAC check, so routes should not repeat it.
- * They read this header instead — which means it is a trusted input, and the one
- * thing that must never happen is a client setting it themselves. It is stripped
- * from every incoming request below, unconditionally, before anything else runs.
+ * /api/health is public deliberately. It reports only whether each environment
+ * variable is *present*, never what it holds, and gating it creates a catch-22
+ * on a bad deploy: the unlock page tells you to check it precisely when the
+ * database is unreachable, which is exactly when nobody can sign in to look.
  */
-export const USER_HEADER = 'x-palette-user';
+const PUBLIC_PATHS = new Set(['/unlock', '/api/auth', '/api/bootstrap', '/api/health']);
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
