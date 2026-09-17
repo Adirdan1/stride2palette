@@ -80,7 +80,12 @@ export async function GET() {
 
   if (configured.supabase) {
     try {
-      const { error } = await db().from('settings').select('id', { head: true, count: 'exact' });
+      // Deliberately NOT a head request. `head: true` sends HEAD, and a HEAD
+      // response carries no body — so PostgREST's error message never arrives
+      // and every failure arrives here indistinguishable, reason "other" with
+      // an empty detail. That is exactly the blindness this probe exists to
+      // remove. One row of one integer column is a small price for an answer.
+      const { error } = await db().from('settings').select('id').limit(1);
       database = error
         ? {
             checked: true,
@@ -88,6 +93,11 @@ export async function GET() {
             reason: classify(error),
             // The database's own words, with every known secret stripped out.
             detail: redact(error.message),
+            // PostgREST puts the useful part in these, and an auth failure
+            // often carries a code where the message is thin.
+            code: error.code ?? null,
+            hint: redact(error.hint ?? error.details ?? '') || null,
+            status: error.status ?? null,
           }
         : { checked: true, ok: true };
     } catch (error) {
