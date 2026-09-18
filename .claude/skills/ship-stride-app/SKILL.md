@@ -992,3 +992,32 @@ separate list that happens to be next to it. Carrying the nested-step rule up
 one level — the steps hang off a rule that starts tight against the card —
 is what makes them read as the inside of the task rather than the thing after
 it. **The gap is what makes two things look like two things.**
+
+**24. Hebrew needs less leading than Latin, and a row's height is not a tap
+target.** Adir reported "spacing in the Hebrew line". Two separate causes, both
+measured before either was touched.
+
+**Leading.** Hebrew has no ascenders and no descenders, so its glyphs sit in a
+narrower band of the line box and the same multiplier leaves visibly more white
+between lines. `line-height: 1.45` is right for an English description and loose
+for the same sentence in Hebrew. The fix keys off the direction the row already
+computes — `[dir='rtl'] .blurb { line-height: 1.32 }` — so it follows the
+content rather than becoming a global setting an English task would also get.
+**A type scale is not portable across scripts.** Check the leading whenever a
+component starts carrying a script it was not set for.
+
+**Row height.** A one-line step was 44px tall for 19px of text. The `min-height:
+2.75rem` was there "for the tap target" — but the target was the checkbox, whose
+own hit area was 18px. The row height was buying 25px of air per step and
+nothing else, and with most steps being one line the list read as a column of
+gaps with words in it.
+
+The target belongs on the control, not on its container: wrapping the checkbox
+in a padded label gave 30px, and the row then only had to hold a line of text —
+44px down to 34px *and* 18px up to 30px, both directions at once.
+
+Size that hit area to fit **inside** the row rather than to overflow it. A
+target that spills into its neighbour ticks the wrong step, which is worse than
+one that is a little under the 44px guideline. Assert it: a probe comparing
+adjacent targets' rects for intersection is two lines and catches the mistake
+the moment someone tightens the rhythm further.
