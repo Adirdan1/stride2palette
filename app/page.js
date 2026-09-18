@@ -1,34 +1,29 @@
-import { getUser, loadBoard } from '@/lib/repo.js';
-import { USER_HEADER } from '@/lib/auth.js';
-import { headers } from 'next/headers';
-import Board from './components/Board.js';
+import { overviewStats } from '@/lib/core.js';
+import { pageData } from '@/lib/pages.js';
+import OverviewScreen from './components/OverviewScreen.js';
 
 /**
- * The one screen.
+ * The overview.
  *
- * Every derived value on it — the bands, the budget, the countdown — is computed
- * by pure functions in core.js on this request. Nothing is cached and nothing is
- * stored, so a date rolling over or a payment landing changes the board on the
- * next read with no write and no cron.
+ * Every figure on it is derived by pure functions in core.js on this request.
+ * Nothing is cached and nothing is stored, so a date rolling over or somebody
+ * else ticking a step changes the numbers on the next read, with no write and
+ * no cron.
  */
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
-  const board = await loadBoard();
-  const me = await getUser((await headers()).get(USER_HEADER));
+  const data = await pageData();
 
   return (
-    <Board
-      today={board.today}
-      settings={board.settings}
-      users={board.users}
-      bands={board.bands}
-      budget={board.budget}
-      hero={board.hero}
-      payments={board.payments}
-      // A Map does not survive the trip to a client component.
-      spend={Object.fromEntries(board.spend)}
-      me={me}
+    <OverviewScreen
+      stats={overviewStats(data.items, data.payments, data.users, data.settings, data.today)}
+      today={data.today}
+      me={data.me}
+      domains={data.domains}
+      openByDomain={data.openByDomain}
+      settings={data.settings}
+      users={data.users}
     />
   );
 }

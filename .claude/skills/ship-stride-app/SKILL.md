@@ -575,7 +575,7 @@ Dark redefines tokens only, and sets `--lift: none`.
 | --- | --- | --- | --- |
 | Stride | `--ember #bd5417` the streak | `--frost #2f75a0` freezes | `--break #a52f28` a miss |
 | stride2do | `--plum #6b3f6b` | — | `--break #a52f28` slipped |
-| stride2palette | `--basil #3f6b33` cleared | `--cheese #8a6008` a deadline closing | `--break #a52f28` overdue, and the ragù |
+| stride2palette | `--ragu #b4472f` cleared | `--cheese #8a6008` a deadline closing | `--break #5f1f28` overdue |
 
 `--break` appears to be shared across the collection and to mean the same thing
 in both: *this went wrong*. Treat it as reserved.
@@ -799,3 +799,66 @@ than it does in Stride, because this app has several people in it — pulling do
 is how somebody else's edits reach your screen. The indicator is the spine in its
 third orientation, and it segments while working rather than only changing
 colour, following the same form-before-colour rule as the row rails.
+
+## Decisions and deviations — stride2palette, second pass
+
+The app grew from one board into eight pages, several people and live editing.
+
+**12. Two reds on one screen, separated by value rather than hue.** Adir asked
+for the accent to be the ragù, knowing it costs the obvious reading of green for
+done and collides with the collection's reserved `--break`. The resolution is
+the design system's own first rule: *form carries meaning before colour does.*
+On-track is a solid spine, overdue is segmented, and they are never confused even
+in greyscale.
+
+Colour still helps in light, where the wine is **2.27× darker** than the accent.
+In dark it cannot: both reds must be light enough to clear 4.5:1 on near-black,
+which compresses them into one band — **1.4× is the best separation achievable**.
+So dark leans on hue, a cool rose against a warm orange, and on the form. Worth
+knowing before anyone else tries two of one hue: *light themes have room for a
+value trick and dark themes do not.*
+
+**13. Domains are many-to-many, and that is why there is no money breakdown by
+area.** A task carries any number of domains and appears on every matching page,
+because an espresso machine contract is genuinely Coffee and Finance and making
+it choose is how it goes missing from whichever page somebody opens. The
+consequence is that no per-domain total can be honest: a multi-domain cost would
+be counted twice and the parts would not sum to the whole. `summariseBudget`
+therefore reports one figure for the venue and no breakdown at all. **A figure
+that does not add up is worse than no figure.**
+
+**14. The edit lock is a lease, not a lock.** Opening a task claims it for sixty
+seconds and the browser refreshes that while the sheet is open; everyone else
+sees a read-only form naming the holder. The distinction is the whole design: a
+lock has to be handed back, and somebody will always shut a laptop instead — a
+lease simply stops being true.
+
+Two things make it correct rather than decorative. The claim is a single
+conditional `update` whose `or` filter accepts only an unheld, expired, or
+self-held row, so **Postgres decides the race** and two people cannot both win.
+And the lease is checked again on the write itself: a disabled form is a
+courtesy, not a guarantee, and a stale tab that never saw the lock must still be
+refused.
+
+**15. Polling, not Realtime.** Five seconds, paused while the tab is hidden.
+Supabase Realtime would mean the browser holding a publishable key and talking to
+the database directly, which means writing RLS policies — and *every table in
+this collection has RLS on with zero policies*, its most consistently followed
+rule. A poll on a board of tens of rows buys the same liveness for none of that.
+
+**16. A task cannot be marked done without a conclusion.** The one piece of
+deliberate friction in the app. A finished task with nothing written about how it
+finished is exactly what a launch board exists to prevent — three months later
+nobody remembers which supplier was chosen or what the inspector actually said.
+`dropped` is exempt: abandoning something is not an outcome worth writing up, and
+demanding one would only teach people to type a full stop.
+
+**17. Render the page, not just the mark.** The component screenshots that caught
+the clip-art palette caught two more bugs here — descriptions running inline with
+their titles, because a row body is built from spans (a `<button>` may not contain
+block elements) and *spans do not stack*. It also produced one false alarm:
+Chromium gave a 500px viewport while capturing a 440px image, so content appeared
+clipped that was not. **Measure before fixing**: a probe script reporting
+`document.body.scrollWidth` and any element wider than the viewport settled it in
+one render, and should be the first move whenever a layout looks like it
+overflows.
