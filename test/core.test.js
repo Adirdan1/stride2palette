@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   directionOf,
+  dropTarget,
+  isDescendantOf,
+  moveProblem,
+  placeSubtask,
+  subtreeHeight,
   BANDS,
   CONCLUSION_REQUIRED,
   LOCK_LEASE_MS,
@@ -228,6 +233,161 @@ describe('parseAgorot', () => {
 });
 
 // ---------------------------------------------------------------------------
+describe('moving steps', () => {
+  // a > b > c > d, plus a sibling e under the same item.
+  const chain = [
+    { id: 'a', itemId: 'i1', parentId: null, position: 0, title: 'a' },
+    { id: 'b', itemId: 'i1', parentId: 'a', position: 0, title: 'b' },
+    { id: 'c', itemId: 'i1', parentId: 'b', position: 0, title: 'c' },
+    { id: 'd', itemId: 'i1', parentId: 'c', position: 0, title: 'd' },
+    { id: 'e', itemId: 'i1', parentId: null, position: 1, title: 'e' },
+    { id: 'z', itemId: 'i2', parentId: null, position: 0, title: 'z' },
+  ];
+
+  it('measures how tall a subtree is', () => {
+    expect(subtreeHeight('a', chain)).toBe(4);
+    expect(subtreeHeight('c', chain)).toBe(2);
+    expect(subtreeHeight('d', chain)).toBe(1);
+    expect(subtreeHeight('e', chain)).toBe(1);
+  });
+
+  it('knows what sits beneath what', () => {
+    expect(isDescendantOf('d', 'a', chain)).toBe(true);
+    expect(isDescendantOf('d', 'c', chain)).toBe(true);
+    expect(isDescendantOf('a', 'd', chain)).toBe(false);
+    expect(isDescendantOf('e', 'a', chain)).toBe(false);
+  });
+
+  it('allows a move that fits', () => {
+    expect(moveProblem('e', 'c', chain)).toBeNull();
+    expect(moveProblem('e', null, chain)).toBeNull();
+  });
+
+  it('refuses to put a step inside itself', () => {
+    expect(moveProblem('a', 'a', chain)).toMatch(/inside itself/);
+  });
+
+  it('refuses to put a step inside its own subtree', () => {
+    // This is the one that loses data rather than merely looking wrong: the
+    // whole subtree would detach from the tree and never render again.
+    expect(moveProblem('a', 'd', chain)).toMatch(/one of its own steps/);
+    expect(moveProblem('b', 'c', chain)).toMatch(/one of its own steps/);
+  });
+
+  it('refuses to cross to another task', () => {
+    expect(moveProblem('e', 'z', chain)).toMatch(/another task/);
+  });
+
+  it('counts the whole subtree against the depth limit, not just the target', () => {
+    // A three-level subtree, and a three-level chain to drop it onto.
+    const tall = [
+      { id: 'T1', itemId: 'i1', parentId: null, position: 0, title: 'T1' },
+      { id: 'T2', itemId: 'i1', parentId: 'T1', position: 0, title: 'T2' },
+      { id: 'T3', itemId: 'i1', parentId: 'T2', position: 0, title: 'T3' },
+      { id: 'H1', itemId: 'i1', parentId: null, position: 1, title: 'H1' },
+      { id: 'H2', itemId: 'i1', parentId: 'H1', position: 0, title: 'H2' },
+      { id: 'H3', itemId: 'i1', parentId: 'H2', position: 0, title: 'H3' },
+    ];
+
+    expect(subtreeHeight('T1', tall)).toBe(3);
+
+    // Onto level two: 2 + 3 = 5, exactly the limit, so it fits.
+    expect(moveProblem('T1', 'H2', tall)).toBeNull();
+
+    // Onto level three: 2 + 3 = 6. Checking only the target's depth would let
+    // this through and then silently render a sixth level.
+    expect(moveProblem('T1', 'H3', tall)).toMatch(/deeper than 5/);
+
+    // A leaf onto the deepest level still fits, which is the case that makes
+    // the distinction worth drawing at all.
+    expect(moveProblem('e', 'd', chain)).toBeNull();
+  });
+
+  it('renumbers siblings from zero and reports only what changed', () => {
+    const rows = [
+      { id: 'p', itemId: 'i1', parentId: null, position: 0, title: 'p' },
+      { id: 'q', itemId: 'i1', parentId: null, position: 1, title: 'q' },
+      { id: 'r', itemId: 'i1', parentId: null, position: 2, title: 'r' },
+    ];
+
+    const writes = placeSubtask(rows, 'r', null, 0);
+    expect(writes).toContainEqual({ id: 'r', parentId: null, position: 0 });
+    expect(writes).toContainEqual({ id: 'p', position: 1 });
+    expect(writes).toContainEqual({ id: 'q', position: 2 });
+  });
+
+  it('leaves untouched siblings out of the writes', () => {
+    const rows = [
+      { id: 'p', itemId: 'i1', parentId: null, position: 0, title: 'p' },
+      { id: 'q', itemId: 'i1', parentId: null, position: 1, title: 'q' },
+      { id: 'r', itemId: 'i1', parentId: null, position: 2, title: 'r' },
+    ];
+
+    // Moving the last item to the end changes nothing but its own row.
+    const writes = placeSubtask(rows, 'r', null, 2);
+    expect(writes).toEqual([{ id: 'r', parentId: null, position: 2 }]);
+  });
+
+  it('clamps an index past either end', () => {
+    const rows = [
+      { id: 'p', itemId: 'i1', parentId: null, position: 0, title: 'p' },
+      { id: 'q', itemId: 'i1', parentId: null, position: 1, title: 'q' },
+    ];
+
+    expect(placeSubtask(rows, 'q', null, 99)).toContainEqual({ id: 'q', parentId: null, position: 1 });
+    expect(placeSubtask(rows, 'q', null, -5)).toContainEqual({ id: 'q', parentId: null, position: 0 });
+  });
+
+  it('records the new parent when a step changes level', () => {
+    const writes = placeSubtask(chain, 'e', 'a', 0);
+    expect(writes).toContainEqual({ id: 'e', parentId: 'a', position: 0 });
+    // 'b' was the only child, so it moves down one.
+    expect(writes).toContainEqual({ id: 'b', position: 1 });
+  });
+});
+
+describe('reading a drop', () => {
+  // Two rows, 100px tall each, stacked.
+  const rows = [
+    { id: 'a', parentId: null, index: 0, top: 0, bottom: 100 },
+    { id: 'b', parentId: null, index: 1, top: 100, bottom: 200 },
+  ];
+
+  it('reads the top band as "before this row"', () => {
+    expect(dropTarget(rows, 10)).toEqual({ kind: 'before', overId: 'a', parentId: null, index: 0 });
+  });
+
+  it('reads the bottom band as "after this row", which is the next index', () => {
+    expect(dropTarget(rows, 90)).toEqual({ kind: 'after', overId: 'a', parentId: null, index: 1 });
+  });
+
+  it('reads the middle band as "inside this row"', () => {
+    // The parent becomes the row itself, and it lands first among its children.
+    expect(dropTarget(rows, 50)).toEqual({ kind: 'inside', overId: 'a', parentId: 'a', index: 0 });
+  });
+
+  it('keeps the bands at 30/40/30', () => {
+    expect(dropTarget(rows, 29).kind).toBe('before');
+    expect(dropTarget(rows, 31).kind).toBe('inside');
+    expect(dropTarget(rows, 69).kind).toBe('inside');
+    expect(dropTarget(rows, 71).kind).toBe('after');
+  });
+
+  it('carries the row it landed on, not the first one', () => {
+    expect(dropTarget(rows, 150)).toEqual({ kind: 'inside', overId: 'b', parentId: 'b', index: 0 });
+  });
+
+  it('returns nothing when the pointer is off the list', () => {
+    expect(dropTarget(rows, -20)).toBeNull();
+    expect(dropTarget(rows, 500)).toBeNull();
+    expect(dropTarget([], 50)).toBeNull();
+  });
+
+  it('ignores a row with no height rather than dividing by zero', () => {
+    expect(dropTarget([{ id: 'x', parentId: null, index: 0, top: 40, bottom: 40 }], 40)).toBeNull();
+  });
+});
+
 describe('text direction', () => {
   it('reads a Hebrew title as right-to-left', () => {
     expect(directionOf('הכרעה: כשרות וימי פתיחה')).toBe('rtl');

@@ -149,6 +149,7 @@ export default function TaskSheet({
 
         <SubtaskTree
           nodes={buildSubtaskTree(steps)}
+          flat={steps}
           canTick={!readOnly}
           canEdit={!readOnly}
           busy={busy}
@@ -156,6 +157,9 @@ export default function TaskSheet({
           onDelete={(id) => run(() => del(`/api/subtasks/${id}`))}
           onAdd={(text, parentId) => run(() =>
             post('/api/subtasks', { itemId: item.id, title: text, parentId }))}
+          onMove={(id, parentId, index) => run(() =>
+            patch(`/api/subtasks/${id}`, { parentId, index }))}
+          onRefuse={setError}
         />
 
         {!readOnly && (
