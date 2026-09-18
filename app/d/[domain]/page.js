@@ -14,7 +14,6 @@ export default async function Page({ params }) {
 
   return (
     <TaskListScreen
-      title={found.label}
       heading={found.label}
       items={inDomain(data.items, found.key)}
       allItems={data.items}

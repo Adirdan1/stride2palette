@@ -18,7 +18,6 @@ export default async function Page({ params }) {
 
   return (
     <TaskListScreen
-      title="People"
       heading={person ? person.displayName : 'Nobody yet'}
       items={items}
       allItems={data.items}

@@ -862,3 +862,19 @@ clipped that was not. **Measure before fixing**: a probe script reporting
 `document.body.scrollWidth` and any element wider than the viewport settled it in
 one render, and should be the first move whenever a layout looks like it
 overflows.
+
+**18. A scrolling navigation needs a visible edge, or it reads as a missing
+feature.** Eight destinations do not fit across a phone, so the bottom nav
+scrolls. The first version cut the last two off at the hard edge of the screen
+with no hint they existed, and they were immediately reported missing — the
+person was right, because a control nobody can see is not a control.
+
+Two cheap fixes, and both are general: a `mask-image` fading each end so the row
+visibly continues past it, and `scrollIntoView({ block: 'nearest', inline:
+'nearest' })` on the current item so a deep section is never stranded off-screen
+on arrival. `nearest` matters — centring on every navigation yanks a bar that was
+already fine.
+
+**19. The top bar names the app, not the page.** Putting the section name in the
+brand slot meant a page headed "Finance" under a bar reading "Finance", on a
+screen with room for neither. The page names itself once, in its own heading.

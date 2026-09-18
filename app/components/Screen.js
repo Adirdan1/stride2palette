@@ -12,7 +12,7 @@ import useLive from './useLive.js';
  * bottom, and a poll keeping both in step with whatever everybody else is
  * doing.
  */
-export default function Screen({ title, me, domains, openByDomain, settings, users, children }) {
+export default function Screen({ me, domains, openByDomain, settings, users, children }) {
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
   useLive(5);
@@ -22,8 +22,11 @@ export default function Screen({ title, me, domains, openByDomain, settings, use
       <PullToRefresh />
 
       <header className="topbar">
+        {/* Always the app's name. The page names itself once, in its own
+            heading — showing the section here too meant "Finance" twice on a
+            screen with room for neither. */}
         <span className="brand">
-          {title}<span className="brand__mark">.</span>
+          Palette<span className="brand__mark">.</span>
         </span>
         <button
           type="button"

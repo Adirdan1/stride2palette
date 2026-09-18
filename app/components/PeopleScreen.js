@@ -14,7 +14,7 @@ import Screen from './Screen.js';
  */
 export default function PeopleScreen({ people, me, domains, openByDomain, settings, users }) {
   return (
-    <Screen title="People" me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
+    <Screen me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
       <section className="band" style={{ marginTop: '0.25rem' }}>
         <div className="band__head">
           <h1 className="sheet__title">Who is on what</h1>
