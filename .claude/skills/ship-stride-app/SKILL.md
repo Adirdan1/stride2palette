@@ -938,3 +938,26 @@ One harness note that cost a render: headless Chromium reports
 `prefers-color-scheme: light`, so a dark screenshot needs the real stylesheet
 with `@media (prefers-color-scheme: dark)` rewritten to `@media all`. Rewrite
 the query; never hand-copy the dark token values into a harness.
+
+**22. A floating action button is an LTR habit. Dock it.** The add button sat in
+the bottom corner, floating over the list, and was reported as being "in a weird
+place". It was — but not for the reason it looked.
+
+A floating button covers whatever it passes over. In English it lands on the
+trailing whitespace at the end of a line, which is harmless enough that the
+pattern is everywhere and nobody questions it. Against right-aligned Hebrew it
+covers the **start** of every line instead: the one part you cannot skim past.
+The pattern's safety was always an accident of the writing direction, and the
+collection's apps now carry both.
+
+Docking it beside the identity chip in the top bar removes the problem instead
+of tuning around it, and it costs one tap target's worth of bar. The page's
+primary action is passed to `Screen` as `action={{ label, onClick }}`, so a page
+with nothing to add simply omits it and the slot disappears.
+
+It also deletes three CSS rules that existed only to keep the floating button
+out of trouble — a safe-area override, a home-indicator override, and a third
+that had to be re-tuned the moment the navigation grew to two rows. **A control
+that needs a rule per obstacle is in the wrong plane.** Generalise: if placement
+logic keeps accumulating exceptions, stop adjusting the offsets and take the
+element out of the content plane.

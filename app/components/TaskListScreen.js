@@ -72,7 +72,14 @@ export default function TaskListScreen({
   };
 
   return (
-    <Screen me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
+    <Screen
+      me={me}
+      domains={domains}
+      openByDomain={openByDomain}
+      settings={settings}
+      users={users}
+      action={{ label: 'Add a task', onClick: () => setSheet({ kind: 'add' }) }}
+    >
       <section className="band" style={{ marginTop: '0.25rem' }}>
         <div className="band__head">
           <h1 className="sheet__title" dir="auto">{heading}</h1>
@@ -112,10 +119,6 @@ export default function TaskListScreen({
           </section>
         );
       })}
-
-      <button type="button" className="fab" onClick={() => setSheet({ kind: 'add' })}>
-        + Add
-      </button>
 
       {sheet?.kind === 'add' && (
         <Sheet title="Add a task" onClose={() => setSheet(null)}>
