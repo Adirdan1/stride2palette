@@ -45,7 +45,7 @@ import { MAX_SUBTASK_DEPTH, directionOf, dropTarget, isDescendantOf, moveProblem
  */
 export default function SubtaskTree({
   nodes, flat = [], canTick = true, canEdit = true, busy,
-  onToggle, onDelete, onAdd, onMove, onRefuse,
+  onToggle, onConclude, onDelete, onAdd, onMove, onRefuse,
 }) {
   const [open, setOpen] = useState(() => new Set());
   const [drag, setDrag] = useState(null);
@@ -150,10 +150,13 @@ export default function SubtaskTree({
 
 function Branch({
   nodes, depth, parentId, open, onOpenToggle, canTick, canEdit, busy,
-  drag, drop, handlers, onToggle, onDelete, onAdd,
+  drag, drop, handlers, onToggle, onConclude, onDelete, onAdd,
 }) {
   const [addingUnder, setAddingUnder] = useState(null);
   const [title, setTitle] = useState('');
+  // Which step is being asked how it went, and what has been typed so far.
+  const [asking, setAsking] = useState(null);
+  const [note, setNote] = useState('');
 
   if (nodes.length === 0) return null;
 
@@ -204,7 +207,19 @@ function Branch({
                   checked={node.done}
                   disabled={busy || !canTick}
                   aria-label={node.title}
-                  onChange={(e) => onToggle(node.id, e.target.checked)}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    // Ask straight away, before the write round-trips. The one
+                    // moment somebody knows how a step went is the moment they
+                    // tick it; a second later they have moved on.
+                    if (next) {
+                      setAsking(node.id);
+                      setNote(node.conclusion ?? '');
+                    } else if (asking === node.id) {
+                      setAsking(null);
+                    }
+                    onToggle(node.id, next);
+                  }}
                 />
               </label>
 
@@ -263,6 +278,60 @@ function Branch({
               )}
             </div>
 
+            {asking === node.id && canTick && onConclude && (
+              <div className="steps__note">
+                <input
+                  dir="auto"
+                  className="input"
+                  value={note}
+                  autoFocus
+                  placeholder="How did it go?"
+                  onChange={(e) => setNote(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    await onConclude(node.id, note);
+                    setAsking(null);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={async () => {
+                    await onConclude(node.id, note);
+                    setAsking(null);
+                  }}
+                >
+                  Save
+                </button>
+                {/* Leaving is a real answer, not a failure to answer. Some
+                    steps have nothing to say about them. */}
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => setAsking(null)}
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+
+            {node.conclusion && asking !== node.id && (
+              <button
+                type="button"
+                className="steps__conclusion"
+                dir={directionOf(node.conclusion)}
+                title="Edit this note"
+                disabled={!canTick || !onConclude}
+                onClick={() => {
+                  setAsking(node.id);
+                  setNote(node.conclusion);
+                }}
+              >
+                {node.conclusion}
+              </button>
+            )}
+
             {addingUnder === node.id && (
               <div className="steps__add">
                 <input
@@ -303,6 +372,7 @@ function Branch({
                 drop={drop}
                 handlers={handlers}
                 onToggle={onToggle}
+                onConclude={onConclude}
                 onDelete={onDelete}
                 onAdd={onAdd}
               />

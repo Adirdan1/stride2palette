@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   directionOf,
   dropTarget,
+  wantsConclusion,
   isDescendantOf,
   moveProblem,
   placeSubtask,
@@ -233,6 +234,35 @@ describe('parseAgorot', () => {
 });
 
 // ---------------------------------------------------------------------------
+describe('asking how a step went', () => {
+  it('asks once a step is ticked and nothing is written', () => {
+    expect(wantsConclusion({ done: true, conclusion: null })).toBe(true);
+    expect(wantsConclusion({ done: true })).toBe(true);
+  });
+
+  it('does not ask about a step that is not done', () => {
+    expect(wantsConclusion({ done: false, conclusion: null })).toBe(false);
+    expect(wantsConclusion({ done: false, conclusion: 'anything' })).toBe(false);
+  });
+
+  it('stops asking once something is written', () => {
+    expect(wantsConclusion({ done: true, conclusion: 'הכי זול, 14,200' })).toBe(false);
+  });
+
+  it('treats whitespace as nothing written', () => {
+    // Otherwise a stray space counts as an answer and the question never
+    // comes back, which is the failure mode that makes this worth testing.
+    expect(wantsConclusion({ done: true, conclusion: '   ' })).toBe(true);
+    expect(wantsConclusion({ done: true, conclusion: '\n\t' })).toBe(true);
+  });
+
+  it('survives being handed nothing at all', () => {
+    expect(wantsConclusion(null)).toBe(false);
+    expect(wantsConclusion(undefined)).toBe(false);
+    expect(wantsConclusion({})).toBe(false);
+  });
+});
+
 describe('moving steps', () => {
   // a > b > c > d, plus a sibling e under the same item.
   const chain = [

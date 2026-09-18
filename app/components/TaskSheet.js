@@ -154,6 +154,8 @@ export default function TaskSheet({
           canEdit={!readOnly}
           busy={busy}
           onToggle={(id, done) => run(() => patch(`/api/subtasks/${id}`, { done }))}
+          onConclude={(id, conclusion) => run(() =>
+            patch(`/api/subtasks/${id}`, { conclusion }))}
           onDelete={(id) => run(() => del(`/api/subtasks/${id}`))}
           onAdd={(text, parentId) => run(() =>
             post('/api/subtasks', { itemId: item.id, title: text, parentId }))}
