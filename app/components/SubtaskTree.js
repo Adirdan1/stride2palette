@@ -208,10 +208,17 @@ function Branch({
                 />
               </label>
 
+              {/* `dir` is repeated on the title itself, not left to inherit from
+                  the item. Inheritance through a flex container is where this
+                  broke on iOS: the row flipped (the checkbox sat correctly at
+                  the reading edge) while the title inside it stayed aligned to
+                  the wrong side, leaving a 117pt gap between the two. The
+                  element that carries the text declares its own direction. */}
               {hasChildren ? (
                 <button
                   type="button"
                   className={`steps__title steps__open ${node.done ? 'steps__title--done' : ''}`}
+                  dir={dir}
                   aria-expanded={shown}
                   onClick={() => onOpenToggle(node.id)}
                 >
@@ -222,7 +229,7 @@ function Branch({
                   <span className="steps__tally">{node.children.length}</span>
                 </button>
               ) : (
-                <span className={`steps__title ${node.done ? 'steps__title--done' : ''}`}>
+                <span className={`steps__title ${node.done ? 'steps__title--done' : ''}`} dir={dir}>
                   {node.title}
                 </span>
               )}

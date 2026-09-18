@@ -1064,3 +1064,44 @@ dragged around for a month ends up with positions that no longer describe an
 order. The writes are per-row and not transactional, which is honest: a
 half-applied reorder is a wrong order that the next drag fixes, and nobody loses
 anything.
+
+**26. Declare direction on the element that carries the text — and when a
+report and your render disagree, measure the report.** Adir said the steps were
+still not aligned, twice. I had already "fixed" it once and had a measurement
+saying the delta was zero, so the second report was easy to disbelieve. It was
+correct both times.
+
+**Measuring the screenshot settled it in one pass.** Reading pixel positions off
+an image by eye is guessing with extra steps; scanning the PNG is not. An ink
+profile across one row gave: glyphs from 23pt to 188pt, *nothing at all* until
+the checkbox at 305pt, and the card's own text right-aligned at 292pt. That is
+not a matter of opinion. **When a user's report and your own render disagree,
+the screenshot is data — open it and measure it.**
+
+**Render the real component, not an imitation of it.** My harness was
+hand-written markup that I believed matched the component. It did not have to
+match, and that is the whole problem: every render check I ran was checking my
+imitation. Importing the actual component and rendering it with
+`renderToStaticMarkup` removes that entire class of false confidence.
+`vitest.probe.config.js` exists for this — a plugin that runs esbuild's JSX
+loader over the app's `.js` files so vitest can import them, and a
+`*.probe.test.jsx` that writes the real markup into the CSS harness. It is
+excluded from `npm test` by extension. **Extend the existing rule — build the
+harness from the real stylesheet — to the markup as well.**
+
+**The bug itself:** the row flipped correctly on iOS (the checkbox sat at the
+reading edge) while the title inside it aligned to the wrong end, leaving a
+117pt gap. The title was inheriting its direction through a flex container, and
+that inheritance is where it broke — it reproduced in neither headless Chromium
+nor a faithful local render of the same code at the same width.
+
+So: **a flex item that carries text states its own `dir` and its own
+`text-align: start`.** Repeating what an ancestor already says costs one
+attribute and removes a dependency on every layout engine agreeing about how
+direction propagates into a flex formatting context. Do not rely on inheritance
+for anything a browser could plausibly get wrong when you cannot test that
+browser.
+
+And when you cannot reproduce a real report, say so plainly and fix it
+defensively rather than closing it as "works for me". "Works in the one engine I
+can run" is not the same claim.

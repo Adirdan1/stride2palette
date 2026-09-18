@@ -62,7 +62,7 @@ export default function TaskRow({
           <Ring done={progress.done} total={progress.total} />
 
           <span className="row__body">
-            <span className="row__title">
+            <span className="row__title" dir={dir}>
               {item.title}
               <span className="caret" aria-hidden="true">
                 {expanded ? '▾' : dir === 'rtl' ? '◂' : '▸'}

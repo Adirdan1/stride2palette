@@ -793,6 +793,7 @@ input, select, textarea {
      every part of the stack has to be told to be a block or the title, the
      description and the conclusion all run together on one line. */
   display: block;
+  text-align: start;
   font-weight: 500;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -1485,6 +1486,7 @@ select.input {
 
 .blurb {
   display: block;
+  text-align: start;
   margin-top: 0.35rem;
   color: var(--ink-2);
   font-size: 0.82rem;
@@ -1724,6 +1726,11 @@ select.input {
 .steps__title {
   flex: 1;
   min-width: 0;
+  /* Stated, not inherited. A flex item that relies on picking its alignment up
+     from an ancestor is one browser quirk away from sitting at the wrong end of
+     its own box, and that is exactly what it did on iOS while the rest of the
+     row flipped correctly around it. */
+  text-align: start;
   font-size: 0.88rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
