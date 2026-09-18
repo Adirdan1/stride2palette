@@ -39,7 +39,7 @@ export default function OverviewScreen({ stats, today, me, domains, openByDomain
   const { work, money, people } = stats;
 
   return (
-    <Screen title="Palette" me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
+    <Screen me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
       <Hero hero={stats.hero} today={today} />
 
       <div className="tiles">

@@ -36,7 +36,7 @@ const BAND_EMPTY = {
  * must not drift apart.
  */
 export default function TaskListScreen({
-  title, heading, items, allItems, subtasks, payments, users, domains, settings,
+  heading, items, allItems, subtasks, payments, users, domains, settings,
   today, spend, me, openByDomain, presetDomain,
 }) {
   const router = useRouter();
@@ -72,7 +72,7 @@ export default function TaskListScreen({
   };
 
   return (
-    <Screen title={title} me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
+    <Screen me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
       <section className="band" style={{ marginTop: '0.25rem' }}>
         <div className="band__head">
           <h1 className="sheet__title">{heading}</h1>
