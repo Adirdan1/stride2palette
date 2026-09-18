@@ -906,3 +906,35 @@ stable. Two rules follow for the collection:
   and `margin-inline-start` cost nothing to write first and are invisible to fix
   later. The nested-step indent already used `-inline-start` and needed no change
   at all — that is the whole argument.
+
+**21. A hint that has been ignored for the life of the app is not a hint, it is
+a missing alert — and an alert must carry its own fix.** The overview's opening
+day had always degraded quietly: the hero fell back to counting open work, with
+a grey line underneath offering settings. It was polite, it was correct, and the
+date was still unset weeks later with seventeen tasks on the board.
+
+That is the tell. When a state is both *wrong* and *persistent*, the quiet
+fallback is the bug. Two rules:
+
+- **Escalate on evidence, not on taste.** A fallback that has never once been
+  acted on has failed, whatever it looks like. Say the thing loudly instead.
+- **Never report a problem you could also let someone fix.** The alert carries a
+  button that opens settings *focused on the field it is complaining about*.
+  Telling a person something is missing and leaving them to find where to set it
+  is half a feature.
+
+Mechanically, the sheet is owned by the shell, so reaching it from inside a page
+needs a small context (`useSettingsSheet`) rather than every page forwarding a
+prop it does not otherwise care about.
+
+On colour: the wine `--break`, never the accent. The accent means *this is the
+app*; the wine means *something is wrong*, and it is already what overdue work
+uses. Measured both ways — `--break` on `--break-wash` is 9.65:1 light and
+7.94:1 dark, the solid button 12.26:1 and 9.02:1 — and the form carries it too,
+with a rule down the leading edge and a tinted ground that both survive
+greyscale.
+
+One harness note that cost a render: headless Chromium reports
+`prefers-color-scheme: light`, so a dark screenshot needs the real stylesheet
+with `@media (prefers-color-scheme: dark)` rewritten to `@media all`. Rewrite
+the query; never hand-copy the dark token values into a harness.
