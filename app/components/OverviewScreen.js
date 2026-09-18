@@ -2,12 +2,50 @@
 
 import { plural, shekels, shortDate } from '@/lib/format.js';
 import Mark from './Mark.js';
-import Screen from './Screen.js';
+import Screen, { useSettingsSheet } from './Screen.js';
+
+/**
+ * No opening day, said loudly.
+ *
+ * The quiet version of this — the count of open work, with a grey line offering
+ * settings underneath — has been on screen since the app existed and the date
+ * still is not set, which is all the evidence needed that a hint does not work.
+ * Nothing else here can be judged without it: seventeen open tasks is either
+ * comfortable or a crisis depending entirely on a date nobody has chosen.
+ *
+ * `--break` rather than the ragù accent, deliberately. The accent means *this is
+ * the app*; the wine means *something is wrong*, it is the same red overdue work
+ * uses, and in light it sits 2.27× darker than the accent so the two never read
+ * as the same signal. Form carries it too, per the design system: a rule down
+ * the leading edge and a tinted ground, so it still reads as an alert with the
+ * colour taken away.
+ */
+function NoOpeningDay({ hero }) {
+  const settings = useSettingsSheet();
+
+  return (
+    <section className="hero hero--alert" role="alert">
+      <p className="hero__eyebrow hero__eyebrow--alert">Opening day</p>
+      <p className="hero__figure hero__figure--alert">Not set</p>
+      <p className="hero__unit">Nobody has chosen a date yet.</p>
+      <p className="hero__meta">
+        {plural(hero.open, 'thing')} still in the way, and no day to measure them against.
+      </p>
+      <button
+        type="button"
+        className="btn btn--alert"
+        onClick={() => settings?.open('target')}
+      >
+        Set the opening day
+      </button>
+    </section>
+  );
+}
 
 function Hero({ hero, today }) {
-  const clean = hero.kind === 'remaining';
+  if (hero.kind === 'remaining') return <NoOpeningDay hero={hero} />;
+
   const unit = {
-    remaining: `${plural(hero.open, 'thing')} still in the way`,
     countdown: `${plural(hero.days, 'day')} until you open`,
     today: 'You open today',
     overdue: `${plural(hero.days, 'day')} past the date you set`,
@@ -15,15 +53,11 @@ function Hero({ hero, today }) {
 
   return (
     <section className={`hero ${hero.kind === 'today' ? 'hero--open' : ''} ${hero.kind === 'overdue' ? 'hero--late' : ''}`}>
-      <Mark shut={clean} className="mark--hero" />
-      <p className="hero__eyebrow">{clean ? 'Before you open' : 'Opening day'}</p>
-      <p className="hero__figure">{hero.kind === 'today' ? 'Today' : clean ? hero.open : hero.days}</p>
+      <Mark shut={false} className="mark--hero" />
+      <p className="hero__eyebrow">Opening day</p>
+      <p className="hero__figure">{hero.kind === 'today' ? 'Today' : hero.days}</p>
       <p className="hero__unit">{unit}</p>
-      <p className="hero__meta">
-        {clean
-          ? 'Set an opening day in settings and this counts down instead.'
-          : shortDate(hero.target, today)}
-      </p>
+      <p className="hero__meta">{shortDate(hero.target, today)}</p>
     </section>
   );
 }

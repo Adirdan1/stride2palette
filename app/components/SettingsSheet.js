@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { initials } from '@/lib/format.js';
 import { del, patch, post } from './api.js';
 import Sheet from './Sheet.js';
@@ -13,7 +13,7 @@ import Sheet from './Sheet.js';
  * should be kept from, and guessing at a permission model before a real need
  * appears is how you end up maintaining the wrong one.
  */
-export default function SettingsSheet({ settings, users, onClose, onChanged }) {
+export default function SettingsSheet({ settings, users, focus, onClose, onChanged }) {
   const [target, setTarget] = useState(settings.targetOpenDate ?? '');
   const [rate, setRate] = useState(String(settings.vatRateBp / 100));
   const [fundTarget, setFundTarget] = useState(
@@ -22,6 +22,14 @@ export default function SettingsSheet({ settings, users, onClose, onChanged }) {
   const [staff, setStaff] = useState({ username: '', displayName: '', pin: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const targetRef = useRef(null);
+
+  // Arriving from the overview's alert, land on the field that alert is about.
+  // Empty deps on purpose: this fires once, when the sheet opens.
+  useEffect(() => {
+    if (focus === 'target') targetRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const run = async (work) => {
     setBusy(true);
@@ -43,6 +51,7 @@ export default function SettingsSheet({ settings, users, onClose, onChanged }) {
       <label className="field">
         <span className="field__label">Opening day</span>
         <input
+          ref={targetRef}
           className="input"
           type="date"
           value={target}

@@ -384,6 +384,60 @@ input, select, textarea {
 .hero--open .hero__figure { color: var(--ragu); }
 .hero--late .hero__figure { color: var(--break); }
 
+/* The alert hero: no opening day has been chosen.
+ *
+ * The wine rather than the accent, because the accent means "this is the app"
+ * and this means "something is wrong" — the same red overdue work already uses,
+ * 2.27x darker than the accent in light so the two never read as one signal.
+ * Form carries it as well as colour, per the system's first rule: a rule down
+ * the leading edge and a tinted ground, both of which survive greyscale.
+ *
+ * Measured, not guessed: --break on --break-wash is 9.65:1 in light and 7.94:1
+ * in dark; the solid button is 12.26:1 and 9.02:1. */
+.hero--alert {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--break);
+  background: var(--break-wash);
+  box-shadow: none;
+}
+
+.hero--alert::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 5px;
+  border-start-start-radius: var(--radius-lg);
+  border-end-start-radius: var(--radius-lg);
+  background: var(--break);
+}
+
+
+.hero__eyebrow--alert { color: var(--break); }
+
+/* A word, not a numeral, so it cannot take the numeral's size and still fit a
+   360px screen. Still the largest thing here, which is the point. */
+.hero__figure--alert {
+  color: var(--break);
+  font-size: clamp(2.6rem, 13vw, 3.4rem);
+  letter-spacing: -0.02em;
+}
+
+.hero--alert .hero__unit { color: var(--ink); font-weight: 600; }
+.hero--alert .hero__meta { color: var(--ink-2); }
+
+.hero--alert .btn--alert {
+  margin-top: 0.9rem;
+  border-color: transparent;
+  background: var(--break);
+  color: #fffaf2;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero--alert .btn--alert { color: var(--paper); }
+}
+
 /* ==========================================================================
    The budget spine
    
