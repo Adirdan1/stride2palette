@@ -878,3 +878,31 @@ already fine.
 **19. The top bar names the app, not the page.** Putting the section name in the
 brand slot meant a page headed "Finance" under a bar reading "Finance", on a
 screen with room for neither. The page names itself once, in its own heading.
+
+**20. `dir="auto"` on a container is unreliable the moment its children carry
+`dir` too — derive direction from the title instead.** Once the board filled with
+Hebrew, task rows and step rows still laid out left-to-right: the ring, the
+spine and four levels of indent all sat on the side an RTL reader finishes at,
+which made the nesting levels look identical.
+
+The trap is in the spec. `dir="auto"` picks the first strongly directional
+character **excluding any descendant that has its own `dir`** — and in a row
+built properly, every string worth reading already has one. So the container's
+sniff fell through to whatever was left over: the owners line on most rows, and
+the English word "Conclusion" on any row that had one, which flipped that row
+back to LTR while its neighbours were RTL. Inconsistent direction inside one list
+is worse than uniformly wrong direction.
+
+The fix is a pure four-line helper, `directionOf(text)`, and `dir={directionOf(item.title)}`
+on the row. The title is what the row is about, so the answer is both correct and
+stable. Two rules follow for the collection:
+
+- **Sniff explicitly, from the field that defines the thing.** Never let a
+  container guess when its children carry `dir`.
+- **Direction-agnostic CSS is not optional once content can be RTL.** Physical
+  properties silently stop matching: `.row` had `padding-left` making room for a
+  spine at `left: 0.55rem`, so a flipped row put its padding on one side and its
+  spine on the other. `padding-inline`, `inset-inline-start`, `text-align: start`
+  and `margin-inline-start` cost nothing to write first and are invisible to fix
+  later. The nested-step indent already used `-inline-start` and needed no change
+  at all — that is the whole argument.

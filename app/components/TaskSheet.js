@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { canComplete, lockState, subtaskProgress, vatSplit } from '@/lib/core.js';
+import { buildSubtaskTree, canComplete, lockState, subtaskProgress, vatSplit } from '@/lib/core.js';
 import { shekels, shortDate, signedShekels } from '@/lib/format.js';
 import { del, patch, post } from './api.js';
 import Ring from './Ring.js';
 import Sheet from './Sheet.js';
+import SubtaskTree from './SubtaskTree.js';
 import TaskForm, { toForm } from './TaskForm.js';
 
 /** Well inside the sixty-second lease, so a slow request never drops it. */
@@ -87,7 +88,6 @@ export default function TaskSheet({
       ...form,
       planned: form.planned === '' ? 0 : form.planned,
       due: form.due || null,
-      ownerId: form.ownerId || null,
     });
     onClose();
   });
@@ -147,41 +147,20 @@ export default function TaskSheet({
           <Ring done={progress.done} total={progress.total} />
         </div>
 
-        {steps.length > 0 && (
-          <ul className="ledger">
-            {steps.map((sub) => (
-              <li key={sub.id} className="ledger__row">
-                <input
-                  type="checkbox"
-                  checked={sub.done}
-                  disabled={busy || readOnly}
-                  aria-label={sub.title}
-                  onChange={(e) => run(() => patch(`/api/subtasks/${sub.id}`, { done: e.target.checked }))}
-                  style={{ width: '1.15rem', height: '1.15rem', flexShrink: 0 }}
-                />
-                <span style={sub.done ? { textDecoration: 'line-through', color: 'var(--ink-3)' } : undefined}>
-                  {sub.title}
-                </span>
-                {!readOnly && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    style={{ marginLeft: 'auto', minHeight: '2.75rem', padding: '0 0.5rem' }}
-                    aria-label="Remove this step"
-                    disabled={busy}
-                    onClick={() => run(() => del(`/api/subtasks/${sub.id}`))}
-                  >
-                    ×
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        <SubtaskTree
+          nodes={buildSubtaskTree(steps)}
+          readOnly={readOnly}
+          busy={busy}
+          onToggle={(id, done) => run(() => patch(`/api/subtasks/${id}`, { done }))}
+          onDelete={(id) => run(() => del(`/api/subtasks/${id}`))}
+          onAdd={(text, parentId) => run(() =>
+            post('/api/subtasks', { itemId: item.id, title: text, parentId }))}
+        />
 
         {!readOnly && (
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem' }}>
+          <div className="steps__add" style={{ marginTop: '0.8rem' }}>
             <input
+              dir="auto"
               className="input"
               value={step}
               onChange={(e) => setStep(e.target.value)}

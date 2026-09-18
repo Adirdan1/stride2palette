@@ -1,57 +1,52 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 /**
- * Bottom navigation, because these are phone apps held in one hand and every
- * page has to be reachable with a thumb.
+ * Bottom navigation, in two rows.
  *
- * Each domain carries its count of open work, so the nav answers "where is the
- * pressure" without anybody opening anything.
+ * Nine destinations do not fit across a phone in one row. The first attempt
+ * scrolled and simply hid the last two, which were promptly reported missing —
+ * a control nobody can see is not a control. So nothing scrolls and nothing
+ * hides: the three whole-venue pages sit on the top row, the six areas on the
+ * bottom. The split is meaningful rather than arithmetic, which also makes the
+ * bar quicker to read than nine equal cells would be.
  *
- * Eight destinations do not fit across a phone, so it scrolls — and scrolling
- * has to be *visible* or it may as well not exist. The first version simply cut
- * Marketing and Brand off the right-hand edge with no hint they were there, and
- * they were reported missing. Two things fix that: a mask fading both edges, so
- * the row visibly continues past them, and scrolling the current page into view
- * on arrival, so deep sections are never stranded off-screen.
+ * It costs about 44px of height, on pages that scroll anyway. That is the
+ * cheapest thing on the screen.
  */
 export default function Nav({ domains, openByDomain }) {
   const pathname = usePathname();
-  const bar = useRef(null);
 
-  useEffect(() => {
-    const current = bar.current?.querySelector('[aria-current="page"]');
-    // `nearest` keeps the bar still when the link is already visible, rather
-    // than yanking it to centre on every navigation.
-    current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [pathname]);
-
-  const links = [
-    { href: '/', label: 'Overview', count: null },
-    { href: '/people', label: 'People', count: null },
-    ...domains.map((domain) => ({
-      href: `/d/${domain.key}`,
-      label: domain.label,
-      count: openByDomain[domain.key] ?? 0,
-    })),
+  const main = [
+    { href: '/', label: 'Overview' },
+    { href: '/people', label: 'People' },
+    { href: '/fund', label: 'Fund' },
   ];
 
+  const areas = domains.map((domain) => ({
+    href: `/d/${domain.key}`,
+    label: domain.label,
+    count: openByDomain[domain.key] ?? 0,
+  }));
+
+  const link = (item) => (
+    <Link
+      key={item.href}
+      href={item.href}
+      className="nav__link"
+      aria-current={pathname === item.href ? 'page' : undefined}
+    >
+      <span className="nav__label">{item.label}</span>
+      {item.count !== undefined && <span className="nav__count">{item.count}</span>}
+    </Link>
+  );
+
   return (
-    <nav className="nav" aria-label="Sections" ref={bar}>
-      {links.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className="nav__link"
-          aria-current={pathname === link.href ? 'page' : undefined}
-        >
-          <span>{link.label}</span>
-          {link.count !== null && <span className="nav__count">{link.count}</span>}
-        </Link>
-      ))}
+    <nav className="nav" aria-label="Sections">
+      <div className="nav__row nav__row--main">{main.map(link)}</div>
+      <div className="nav__row nav__row--areas">{areas.map(link)}</div>
     </nav>
   );
 }

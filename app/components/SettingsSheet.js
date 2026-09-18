@@ -16,6 +16,9 @@ import Sheet from './Sheet.js';
 export default function SettingsSheet({ settings, users, onClose, onChanged }) {
   const [target, setTarget] = useState(settings.targetOpenDate ?? '');
   const [rate, setRate] = useState(String(settings.vatRateBp / 100));
+  const [fundTarget, setFundTarget] = useState(
+    settings.fundTarget ? (settings.fundTarget / 100).toFixed(0) : '',
+  );
   const [staff, setStaff] = useState({ username: '', displayName: '', pin: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -65,6 +68,21 @@ export default function SettingsSheet({ settings, users, onClose, onChanged }) {
         </span>
       </label>
 
+      <label className="field">
+        <span className="field__label">Shared fund target</span>
+        <input
+          className="input"
+          inputMode="decimal"
+          value={fundTarget}
+          onChange={(e) => setFundTarget(e.target.value)}
+          placeholder="₪0"
+        />
+        <span className="field__hint">
+          What the pot is aiming at. Leave it empty and the fund page shows the balance without
+          progress towards anything.
+        </span>
+      </label>
+
       <button
         type="button"
         className="btn btn--primary btn--block"
@@ -72,6 +90,7 @@ export default function SettingsSheet({ settings, users, onClose, onChanged }) {
         onClick={() => run(() => patch('/api/settings', {
           targetOpenDate: target || null,
           vatRateBp: Math.round(Number(rate) * 100),
+          fundTarget: fundTarget === '' ? 0 : fundTarget,
         }))}
       >
         {busy ? 'Saving…' : 'Save settings'}

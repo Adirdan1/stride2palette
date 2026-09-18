@@ -14,6 +14,11 @@ const STATUS_LABEL = {
 export default function TaskForm({ value, users, domains, onChange, disabled = false }) {
   const set = (patch) => onChange({ ...value, ...patch });
 
+  const toggleOwner = (id) => {
+    const has = value.owners.includes(id);
+    set({ owners: has ? value.owners.filter((o) => o !== id) : [...value.owners, id] });
+  };
+
   const toggleDomain = (key) => {
     const has = value.domains.includes(key);
     set({ domains: has ? value.domains.filter((d) => d !== key) : [...value.domains, key] });
@@ -24,6 +29,7 @@ export default function TaskForm({ value, users, domains, onChange, disabled = f
       <label className="field">
         <span className="field__label">What</span>
         <input
+          dir="auto"
           className="input"
           value={value.title}
           onChange={(e) => set({ title: e.target.value })}
@@ -34,6 +40,7 @@ export default function TaskForm({ value, users, domains, onChange, disabled = f
       <label className="field">
         <span className="field__label">Description</span>
         <textarea
+          dir="auto"
           className="input"
           value={value.description ?? ''}
           onChange={(e) => set({ description: e.target.value })}
@@ -68,6 +75,7 @@ export default function TaskForm({ value, users, domains, onChange, disabled = f
           Conclusion{value.status === 'done' ? ' — required' : ''}
         </span>
         <textarea
+          dir="auto"
           className="input"
           value={value.conclusion ?? ''}
           onChange={(e) => set({ conclusion: e.target.value })}
@@ -122,19 +130,26 @@ export default function TaskForm({ value, users, domains, onChange, disabled = f
         </label>
       </div>
 
-      <label className="field">
+      <div className="field">
         <span className="field__label">Whose job</span>
-        <select
-          className="input"
-          value={value.ownerId ?? ''}
-          onChange={(e) => set({ ownerId: e.target.value })}
-        >
-          <option value="">Nobody yet</option>
+        <div className="chipbar">
           {users.map((user) => (
-            <option key={user.id} value={user.id}>{user.displayName}</option>
+            <button
+              key={user.id}
+              type="button"
+              className="chip"
+              aria-pressed={value.owners.includes(user.id)}
+              onClick={() => toggleOwner(user.id)}
+            >
+              {user.displayName}
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+        <p className="field__hint">
+          More than one is fine — work the three of you share belongs to all three, not to
+          whoever got typed in first.
+        </p>
+      </div>
     </fieldset>
   );
 }
@@ -142,7 +157,7 @@ export default function TaskForm({ value, users, domains, onChange, disabled = f
 export function emptyTask() {
   return {
     title: '', status: 'todo', description: '', conclusion: '',
-    domains: [], due: '', planned: '', ownerId: '',
+    domains: [], due: '', planned: '', owners: [],
   };
 }
 
@@ -155,7 +170,7 @@ export function toForm(item) {
     domains: item.domains ?? [],
     due: item.due ?? '',
     planned: item.planned ? (item.planned / 100).toFixed(2) : '',
-    ownerId: item.ownerId ?? '',
+    owners: item.owners ?? [],
   };
 }
 

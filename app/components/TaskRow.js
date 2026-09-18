@@ -1,13 +1,13 @@
 'use client';
 
-import { daysUntilDue, isOverdue, lockState, subtaskProgress } from '@/lib/core.js';
+import { daysUntilDue, directionOf, isOverdue, lockState, subtaskProgress } from '@/lib/core.js';
 import { dueLabel, shekels } from '@/lib/format.js';
 import Ring from './Ring.js';
 
 /**
  * One line of a board.
  *
- * The spine down the left is the signal, and it is form before colour: solid on
+ * The spine down the leading edge is the signal, and it is form before colour: solid on
  * track, segmented overdue, dotted waiting, hairline undated, absent when
  * closed. That matters more here than it did, because the accent and the
  * overdue colour are now both red — the shapes are what keep them apart.
@@ -15,7 +15,7 @@ import Ring from './Ring.js';
  * Description and conclusion are shown inline rather than hidden behind a tap.
  * The point of writing them down is that somebody reads them without meaning to.
  */
-export default function TaskRow({ item, today, spent, owner, steps, holder, viewerId, onOpen }) {
+export default function TaskRow({ item, today, spent, owners, steps, holder, viewerId, onOpen }) {
   const overdue = isOverdue(item, today);
   const days = daysUntilDue(item, today);
   const closed = item.status === 'done' || item.status === 'dropped';
@@ -40,18 +40,19 @@ export default function TaskRow({ item, today, spent, owner, steps, holder, view
         type="button"
         className={`row ${modifier} ${lock.locked && !lock.mine ? 'row--held' : ''}`}
         onClick={() => onOpen(item.id)}
+        dir={directionOf(item.title)}
       >
         <Ring done={progress.done} total={progress.total} />
 
         <span className="row__body">
-          <span className="row__title">{item.title}</span>
+          <span className="row__title" dir="auto">{item.title}</span>
 
-          {item.description && <span className="blurb">{item.description}</span>}
+          {item.description && <span className="blurb" dir="auto">{item.description}</span>}
 
           {item.conclusion && (
             <span className="blurb blurb--conclusion">
               <span className="blurb__label">Conclusion</span>
-              {item.conclusion}
+              <span dir="auto">{item.conclusion}</span>
             </span>
           )}
 
@@ -61,10 +62,10 @@ export default function TaskRow({ item, today, spent, owner, steps, holder, view
                 {overdue ? `${dueLabel(item.due, today)} — overdue` : dueLabel(item.due, today)}
               </span>
             )}
-            {owner && (
+            {owners.length > 0 && (
               <>
                 {item.due && <span className="dot" aria-hidden="true">·</span>}
-                <span>{owner.displayName}</span>
+                <span>{owners.map((user) => user.displayName).join(', ')}</span>
               </>
             )}
             {lock.locked && !lock.mine && holder && (
