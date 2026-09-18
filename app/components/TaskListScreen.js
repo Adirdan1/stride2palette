@@ -83,6 +83,16 @@ export default function TaskListScreen({
     }
   };
 
+  const concludeStep = async (id, conclusion) => {
+    setError('');
+    try {
+      await patch(`/api/subtasks/${id}`, { conclusion });
+      await refresh();
+    } catch (problem) {
+      setError(problem.message);
+    }
+  };
+
   const add = async () => {
     setBusy(true);
     setError('');
@@ -143,6 +153,7 @@ export default function TaskListScreen({
                     onToggleSteps={toggleSteps}
                     onEdit={(id) => setSheet({ kind: 'task', id })}
                     onTickStep={tickStep}
+                    onConcludeStep={concludeStep}
                   />
                 ))}
               </ul>

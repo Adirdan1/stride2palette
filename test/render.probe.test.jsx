@@ -32,7 +32,15 @@ const titles = [
 
 const steps = titles.map((title, i) => ({
   id: `s${i}`, itemId: 'i1', parentId: null, title, done: false, position: i,
+  conclusion: null,
 }));
+
+// One ticked step carrying its note, which is what this probe is now for.
+steps[1] = {
+  ...steps[1],
+  done: true,
+  conclusion: 'הכי זול: 14,200 ש״ח מקפה איטליה, כולל שנה אחריות והתקנה.',
+};
 
 describe('markup probe', () => {
   it('writes the real TaskRow markup', () => {
@@ -51,6 +59,7 @@ describe('markup probe', () => {
           onToggleSteps={() => {}}
           onEdit={() => {}}
           onTickStep={() => {}}
+          onConcludeStep={() => {}}
         />
       </ul>,
     );
@@ -71,6 +80,16 @@ describe('markup probe', () => {
  out.gapCheckToInk=Math.round(cb.getBoundingClientRect().left - ink(st).r);
  out.deltaInkRight=Math.round(ink(ct).r - ink(st).r);
  var cs=getComputedStyle(st); out.style={dir:cs.direction, ta:cs.textAlign};
+ var note=document.querySelector('.steps__conclusion');
+ if(note){ var nb=note.getBoundingClientRect();
+   var doneTitle=document.querySelectorAll('.steps__title')[1];
+   out.note={box:r(nb), ink:ink(note)};
+   out.noteUnderItsStep = Math.round(nb.top - doneTitle.getBoundingClientRect().bottom);
+   out.noteAlignsWithTitle = Math.round(ink(doneTitle).r - ink(note).r);
+   out.struck = getComputedStyle(doneTitle).textDecorationLine;
+ }
+ var P=document.querySelector('.probe'), pb=P.getBoundingClientRect();
+ out.overflow = P.scrollWidth - Math.round(pb.width);
  var li=document.querySelector('.steps__item');
  out.liDir=li.getAttribute('dir');
  out.stepsDir=document.querySelector('.row__steps').getAttribute('dir');

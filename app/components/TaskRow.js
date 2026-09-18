@@ -26,7 +26,8 @@ import SubtaskTree from './SubtaskTree.js';
  * a button cannot contain a button, and the ⋯ has to be its own target.
  */
 export default function TaskRow({
-  item, today, spent, owners, steps, holder, viewerId, expanded, busy, onToggleSteps, onEdit, onTickStep,
+  item, today, spent, owners, steps, holder, viewerId, expanded, busy,
+  onToggleSteps, onEdit, onTickStep, onConcludeStep,
 }) {
   const overdue = isOverdue(item, today);
   const days = daysUntilDue(item, today);
@@ -132,6 +133,7 @@ export default function TaskRow({
               canEdit={false}
               busy={busy}
               onToggle={onTickStep}
+              onConclude={onConcludeStep}
             />
           )}
         </div>

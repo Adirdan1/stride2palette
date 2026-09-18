@@ -1105,3 +1105,38 @@ browser.
 And when you cannot reproduce a real report, say so plainly and fix it
 defensively rather than closing it as "works for me". "Works in the one engine I
 can run" is not the same claim.
+
+**27. Ask at the moment the answer is known, in the place the answer will
+live.** Ticking a step now asks for a line about how it went, and that line then
+sits under the struck-through step.
+
+**The moment matters more than the mechanism.** The one second somebody knows
+what a step cost or which supplier won is the second they tick it. A minute
+later they have moved on, and a form asking them to fill in conclusions later
+gets a full stop. So the question appears on the tick itself, before the write
+even round-trips.
+
+**The place matters too.** The input appears exactly where the answer will be
+displayed — under that step, indented to its title — rather than in a sheet.
+On a phone that removes a whole layer between a tick and a sentence, and it
+means you can see what the note will look like while writing it.
+
+**Required at the task level, optional at the step level, and that asymmetry is
+the point.** A task is a decision worth writing up, so `canComplete` refuses to
+close one without a conclusion. A step is often a two-minute errand, and this
+board has a hundred and thirteen of them; demanding a sentence for every tick
+teaches people to type a full stop, which is *worse* than an empty column
+because it looks like an answer. Ask every time, accept silence, and make
+"Skip" a real button rather than something you achieve by tapping away.
+
+Store the empty case as null, not `''`, so "nothing written" is one state rather
+than two — and treat whitespace as nothing, or a stray space silently counts as
+an answer and the question never comes back.
+
+**The layout bug worth remembering:** `width: 100%` on an element that is
+indented with a margin is 100% *plus* that margin. The note reached 30px past
+the edge of the screen. Either the indent is padding inside the box, or the
+width is `auto` with `max-width: calc(100% - <indent>)`. The probe caught it
+because it reports the box's left edge, not just whether the page scrolls —
+**an element can overflow its container without the page overflowing**, so
+assert the box, not the symptom.
