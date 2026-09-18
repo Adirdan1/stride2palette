@@ -77,14 +77,20 @@ function Branch({
         return (
           <li key={node.id} className="steps__item" dir={dir}>
             <div className="steps__row">
-              <input
-                type="checkbox"
-                className="steps__box"
-                checked={node.done}
-                disabled={busy || !canTick}
-                aria-label={node.title}
-                onChange={(e) => onToggle(node.id, e.target.checked)}
-              />
+              {/* The hit area is the label, not the box. A bare 18px checkbox is
+                  not tappable on a phone, and inflating the whole row to reach
+                  44px buys 25px of air per step and still leaves the box at
+                  18px. The label carries the target; the row stays tight. */}
+              <label className="steps__check">
+                <input
+                  type="checkbox"
+                  className="steps__box"
+                  checked={node.done}
+                  disabled={busy || !canTick}
+                  aria-label={node.title}
+                  onChange={(e) => onToggle(node.id, e.target.checked)}
+                />
+              </label>
 
               {hasChildren ? (
                 <button
