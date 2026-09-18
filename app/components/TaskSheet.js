@@ -149,7 +149,8 @@ export default function TaskSheet({
 
         <SubtaskTree
           nodes={buildSubtaskTree(steps)}
-          readOnly={readOnly}
+          canTick={!readOnly}
+          canEdit={!readOnly}
           busy={busy}
           onToggle={(id, done) => run(() => patch(`/api/subtasks/${id}`, { done }))}
           onDelete={(id) => run(() => del(`/api/subtasks/${id}`))}

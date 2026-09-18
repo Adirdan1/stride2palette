@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { groupItems, subtasksOf } from '@/lib/core.js';
 import { plural } from '@/lib/format.js';
-import { post } from './api.js';
+import { patch, post } from './api.js';
 import Screen from './Screen.js';
 import Sheet from './Sheet.js';
 import TaskForm, { emptyTask } from './TaskForm.js';
@@ -47,6 +47,17 @@ export default function TaskListScreen({
   }));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Which tasks are showing their steps. Kept here rather than in the row so it
+  // survives the five-second poll: the list re-renders constantly, and a tree
+  // that closed itself under your thumb every few seconds would be unusable.
+  const [expanded, setExpanded] = useState(() => new Set());
+
+  const toggleSteps = (id) => setExpanded((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
 
   const byId = new Map(users.map((user) => [user.id, user]));
   // The sheet is looked up across every task, not just the visible ones, so a
@@ -55,6 +66,22 @@ export default function TaskListScreen({
   const bands = groupItems(items, today);
 
   const refresh = async () => router.refresh();
+
+  // Ticking a step from the list claims no lease. A step's done flag is one
+  // atomic boolean, so the worst a race can do is agree — unlike a draft of
+  // several fields, which is what the lease actually protects.
+  const tickStep = async (id, done) => {
+    setBusy(true);
+    setError('');
+    try {
+      await patch(`/api/subtasks/${id}`, { done });
+      await refresh();
+    } catch (problem) {
+      setError(problem.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const add = async () => {
     setBusy(true);
@@ -111,7 +138,11 @@ export default function TaskListScreen({
                     steps={subtasksOf(item.id, subtasks)}
                     holder={byId.get(item.lockedBy)}
                     viewerId={me?.id}
-                    onOpen={(id) => setSheet({ kind: 'task', id })}
+                    expanded={expanded.has(item.id)}
+                    busy={busy}
+                    onToggleSteps={toggleSteps}
+                    onEdit={(id) => setSheet({ kind: 'task', id })}
+                    onTickStep={tickStep}
                   />
                 ))}
               </ul>

@@ -961,3 +961,34 @@ that had to be re-tuned the moment the navigation grew to two rows. **A control
 that needs a rule per obstacle is in the wrong plane.** Generalise: if placement
 logic keeps accumulating exceptions, stop adjusting the offsets and take the
 element out of the content plane.
+
+**23. Separate the thing people look at from the thing people change.** Tapping
+a task row opened the edit sheet. That made the common move — glance at the
+steps, tick one — cost a modal, an edit lease claimed on somebody else's behalf,
+and a way back out, for an action that changes one boolean.
+
+The row now has two targets: the body opens the task's steps in place, and a
+trailing ⋯ opens the sheet. Same split one level down, where a step with
+children opens them. Everything starts closed; the point of opening a task is to
+see its steps, not to be handed the whole tree.
+
+Three things this forces, each general:
+
+- **A container that holds two controls cannot itself be a control.** The row
+  became a `div` wrapping two buttons, because a button may not contain a
+  button. If a row is growing a second action, stop widening the button.
+- **Permissions split with the interaction.** `SubtaskTree` took a single
+  `readOnly` that meant two things; it now takes `canTick` and `canEdit`. Inline
+  you may tick but not restructure, in the sheet you may do both. A boolean
+  standing for two permissions is a bug waiting for the third case.
+- **A lease is for drafts, not for booleans.** Ticking a step inline claims
+  nothing. One atomic flag can only race into agreement, and the poll reconciles
+  it; the lease exists because two people editing several fields produce two
+  different intentions. Do not reach for the lease just because a write is a
+  write.
+
+One layout note: an expanded region that simply follows its card reads as a
+separate list that happens to be next to it. Carrying the nested-step rule up
+one level — the steps hang off a rule that starts tight against the card —
+is what makes them read as the inside of the task rather than the thing after
+it. **The gap is what makes two things look like two things.**
