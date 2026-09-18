@@ -694,8 +694,12 @@ input, select, textarea {
  * what makes two things look like two things. */
 .row__steps {
   margin-top: 0.1rem;
-  margin-inline-start: 1.15rem;
-  padding-inline-start: 0.8rem;
+  /* Matches the card's own content inset, so the rule starts exactly under
+     where the card's content starts and the step titles land in the same column
+     as the task's title. They used to sit 14px outside it — a child outdented
+     from its parent, which is what reads as "not aligned" in an outline. */
+  margin-inline-start: calc(var(--pad) + 0.5rem);
+  padding-inline-start: 1.2rem;
   padding-block: 0.1rem 0.3rem;
   border-inline-start: 2px solid var(--line);
 }
@@ -1630,6 +1634,69 @@ select.input {
   min-height: 2rem;
   padding: 0.1rem 0.4rem;
   border-radius: var(--radius-sm);
+}
+
+/* The drag handle.
+ *
+ * Drag starts here and nowhere else, which is what lets `touch-action: none`
+ * apply to this one element instead of the list. A drag that began anywhere on
+ * the row would have to guess from the first few pixels whether a finger meant
+ * to drag or to scroll, and would be wrong often enough to make the list feel
+ * broken. Recessive until touched — it is scaffolding, not content. */
+.steps__grip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-inline-start: -0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.steps__grip:active { cursor: grabbing; background: var(--sunken); }
+.steps__grip:disabled { opacity: 0.4; }
+
+/* While a drag is live, nothing else on the tree should look tappable. */
+.steps__dragging .steps__title,
+.steps__dragging .steps__action { cursor: default; }
+
+.steps__item--lifted > .steps__row { opacity: 0.4; }
+
+/* Two drop shapes for two different outcomes, and they must not be confusable:
+   a line between rows means "put it here at this level", a filled outline
+   around a row means "put it inside this one". A line and a box read as
+   different answers even at a glance, where two shades of the same highlight
+   would not. */
+.steps__row--before,
+.steps__row--after {
+  position: relative;
+}
+
+.steps__row--before::after,
+.steps__row--after::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--ragu);
+}
+
+.steps__row--before::after { top: -1px; }
+.steps__row--after::after { bottom: -1px; }
+
+.steps__row--inside {
+  background: var(--ragu-wash);
+  box-shadow: inset 0 0 0 2px var(--ragu);
 }
 
 /* The real tap target: 30px, up from the 18px of a bare checkbox. Sized to sit

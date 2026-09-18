@@ -1021,3 +1021,46 @@ target that spills into its neighbour ticks the wrong step, which is worse than
 one that is a little under the 44px guideline. Assert it: a probe comparing
 adjacent targets' rects for intersection is two lines and catches the mistake
 the moment someone tightens the rhythm further.
+
+**25. Drag on a phone starts on a handle, and one gesture can carry two
+intentions.** Steps can now be dragged to reorder and dropped onto another step
+to nest inside it.
+
+**The handle is not a style choice.** A drag that can begin anywhere on a row
+has to decide, within the first few pixels of movement, whether a finger meant
+to drag the row or scroll the list. It gets that wrong often enough to make the
+list feel broken, and the usual patch — a long-press delay — taxes every
+deliberate drag to serve the ambiguous case. A handle has no ambiguity to
+resolve, so `touch-action: none` applies to one 30px element and the rest of the
+list scrolls exactly as before.
+
+**Split the row by height to get two outcomes from one drag.** Outer bands
+(30%) mean *between* — insert at this row's own level, before or after it. The
+middle band (40%) means *inside*. Reordering and re-parenting stop being
+separate gestures, and "put this step inside that one" is just aiming at the
+middle. The middle band is the wider one because it is aimed at deliberately,
+where the edges are hit in passing.
+
+**The two drop indicators must be different shapes, not different shades.** A
+line between rows and a filled outline around a row read as different answers at
+a glance; two tints of the same highlight do not.
+
+**Validate the subtree, not the target.** Whether a move fits under the depth
+limit depends on how tall the thing being dragged is, not only how deep the
+target is. Checking the target alone lets a three-level subtree onto level three
+and then silently renders a sixth level. `depthOf(target) + subtreeHeight(moved)
+<= MAX`. The move that actually destroys data — a step into its own subtree,
+which detaches it from the tree for good — is refused before a single write.
+
+**The decision is pure; only the rectangles are not.** `dropTarget(rows, y)`
+takes plain `{top, bottom}` numbers and returns what the drop means, so the
+thresholds and the off-by-one between "before this row" and "after this row" are
+unit-tested. The component's job shrinks to reading `getBoundingClientRect` and
+filtering out the dragged subtree. Whenever an interaction's logic is trapped in
+a DOM callback, that is where its bugs will live.
+
+Positions are renumbered from zero on every move rather than nudged, or a list
+dragged around for a month ends up with positions that no longer describe an
+order. The writes are per-row and not transactional, which is honest: a
+half-applied reorder is a wrong order that the next drag fixes, and nobody loses
+anything.
