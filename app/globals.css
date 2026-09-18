@@ -257,6 +257,39 @@ input, select, textarea {
   color: var(--ragu);
 }
 
+/* A page's primary action, docked beside the identity chip.
+ *
+ * It used to float in the bottom corner. A floating button covers whatever it
+ * passes over, and in English that is usually the trailing whitespace at the
+ * end of a line — harmless enough that the pattern is everywhere. With
+ * right-aligned Hebrew it covers the *start* of every line instead, which is
+ * the one part you cannot skim past. Docking it removes the problem rather
+ * than tuning around it, and costs one tap target's worth of top bar. */
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topbar__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--ragu);
+  color: #fffaf2;
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .topbar__action { color: #2b0f06; }
+}
+
 .whoami {
   display: inline-flex;
   align-items: center;
@@ -946,28 +979,6 @@ textarea.input {
 
 .sheet__actions .btn { flex: 1; }
 
-/* The floating add button. */
-.fab {
-  position: fixed;
-  right: max(1rem, calc(50vw - var(--measure) / 2 + 1rem));
-  bottom: calc(1.25rem + env(safe-area-inset-bottom));
-  z-index: 30;
-  min-width: 3.5rem;
-  min-height: 3.5rem;
-  padding: 0 1.25rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--ragu);
-  color: #fffaf2;
-  font-size: 0.95rem;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(74, 48, 24, 0.12), 0 12px 28px -12px rgba(74, 48, 24, 0.4);
-}
-
-@media (prefers-color-scheme: dark) {
-  .fab { color: #2b0f06; box-shadow: none; }
-}
-
 /* Payments inside the item sheet. */
 .ledger {
   display: flex;
@@ -1072,7 +1083,6 @@ button,
 .btn,
 .chip,
 .row,
-.fab,
 a,
 label,
 summary {
@@ -1116,14 +1126,6 @@ select.input {
   background-position: calc(100% - 1.15rem) 1.25rem, calc(100% - 0.8rem) 1.25rem;
   background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
   background-repeat: no-repeat;
-}
-
-/* The add button must not sit under the home indicator, and must not cover the
-   last row of the list when the list is short. */
-@supports (padding: max(0px)) {
-  .fab {
-    bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
-  }
 }
 
 /* A text selection inside a sheet should not be interpreted as a drag on the
@@ -1332,16 +1334,6 @@ select.input {
 /* The nav is fixed and now two rows tall, so every page has to end above it. */
 .shell {
   padding-bottom: calc(8rem + env(safe-area-inset-bottom));
-}
-
-.fab {
-  bottom: calc(6.2rem + env(safe-area-inset-bottom));
-}
-
-@supports (padding: max(0px)) {
-  .fab {
-    bottom: max(6.2rem, calc(env(safe-area-inset-bottom) + 5.8rem));
-  }
 }
 
 /* ==========================================================================
