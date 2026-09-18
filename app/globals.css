@@ -616,30 +616,125 @@ input, select, textarea {
    segmented so the two never read as the same rhythm.
    ========================================================================== */
 
+/* The row is a container, not a control: it holds two of them. Tapping the body
+   opens the task's steps in place, the trailing ⋯ opens the sheet. A button
+   cannot contain a button, which is the whole reason this is a div. */
 .row {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: stretch;
   width: 100%;
   min-height: 2.75rem;
-  /* Logical, not physical: the row carries dir="auto", so a Hebrew task flips
-     the whole box. The extra half-rem has to stay on the side the spine is on. */
-  padding: 0.7rem;
-  padding-inline: calc(var(--pad) + 0.5rem) var(--pad);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
   text-align: start;
 }
 
-button.row {
+.row:hover {
+  border-color: var(--line-strong);
+}
+
+.row__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
   appearance: none;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+  /* Logical, not physical: the row carries a direction, so a Hebrew task flips
+     the whole box. The extra half-rem has to stay on the side the spine is on. */
+  padding: 0.7rem;
+  padding-inline: calc(var(--pad) + 0.5rem) 0.25rem;
+}
+
+/* Top-aligned rather than centred: cards vary in height with their description,
+   and a ⋯ drifting down the side of a tall one reads as unattached. */
+.row__more {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 1.25rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-button.row:hover {
-  border-color: var(--line-strong);
+.row__more:hover { color: var(--ink); }
+
+/* The chevron that says there is something underneath. Sized down and set in
+   the muted ink so it trails the title rather than competing with it. */
+.caret {
+  margin-inline-start: 0.35rem;
+  color: var(--ink-3);
+  font-size: 0.7em;
+  vertical-align: middle;
+}
+
+/* Steps shown in the list, under the row they belong to.
+ *
+ * The rule down the leading edge is the same device the nested levels use, and
+ * it is doing the same job one level up: without it the steps read as a
+ * separate list that happens to follow the card, rather than as the inside of
+ * the task above them. It starts tight against the card on purpose — the gap is
+ * what makes two things look like two things. */
+.row__steps {
+  margin-top: 0.1rem;
+  margin-inline-start: 1.15rem;
+  padding-inline-start: 0.8rem;
+  padding-block: 0.1rem 0.3rem;
+  border-inline-start: 2px solid var(--line);
+}
+
+/* The tree's own first level already sits directly under this rule, so it must
+   not add a second margin on top of it. */
+.row__steps > .steps {
+  margin-top: 0;
+}
+
+.row__nosteps {
+  padding: 0.45rem 0.2rem;
+  color: var(--ink-3);
+  font-size: 0.85rem;
+}
+
+/* A step that opens. It is the title itself rather than a separate chevron
+   column: a column costs width on every row including the ones with nothing to
+   open, and five levels deep there is none to spare. */
+.steps__open {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.steps__tally {
+  margin-inline-start: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  color: var(--ink-3);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The spine. A pseudo-element rather than a border so the dash pattern can
@@ -1082,7 +1177,8 @@ textarea {
 button,
 .btn,
 .chip,
-.row,
+.row__open,
+.row__more,
 a,
 label,
 summary {
