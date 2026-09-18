@@ -1,4 +1,4 @@
-import { isCategory, isDate, isStatus, parseAgorot } from '@/lib/core.js';
+import { completionProblem, isDate, isStatus, parseAgorot } from '@/lib/core.js';
 import { createItem } from '@/lib/repo.js';
 import { bad, body, currentUserId, handler, ok } from '@/lib/routes.js';
 
@@ -11,17 +11,19 @@ export function parseItemFields(raw, { partial = false } = {}) {
     fields.title = title;
   }
 
-  if ('category' in raw || !partial) {
-    const category = raw.category ?? 'other';
-    if (!isCategory(category)) throw new Error(`${category} is not a category.`);
-    fields.category = category;
-  }
-
   if ('status' in raw || !partial) {
     const status = raw.status ?? 'todo';
     if (!isStatus(status)) throw new Error(`${status} is not a status.`);
     fields.status = status;
   }
+
+  if ('domains' in raw) {
+    if (!Array.isArray(raw.domains)) throw new Error('Domains must be a list.');
+    fields.domains = [...new Set(raw.domains.map(String))];
+  }
+
+  if ('description' in raw) fields.description = String(raw.description ?? '').trim() || null;
+  if ('conclusion' in raw) fields.conclusion = String(raw.conclusion ?? '').trim() || null;
 
   if ('due' in raw) {
     // Undated is a real state here, so an empty string clears the date rather
@@ -45,8 +47,27 @@ export function parseItemFields(raw, { partial = false } = {}) {
   return fields;
 }
 
+/**
+ * A task cannot be marked done without a conclusion.
+ *
+ * Checked against the *merged* result of the change rather than the patch, so
+ * setting the status alone on a task that already has a conclusion is fine,
+ * and clearing the conclusion on a task that is already done is not.
+ */
+export function guardCompletion(fields, existing = {}) {
+  return completionProblem({
+    status: 'status' in fields ? fields.status : existing.status,
+    conclusion: 'conclusion' in fields ? fields.conclusion : existing.conclusion,
+  });
+}
+
 export const POST = handler(async (request) => {
   const userId = currentUserId(request);
   if (!userId) return bad('Not signed in.', 401);
-  return ok({ item: await createItem(parseItemFields(await body(request)), userId) });
+
+  const fields = parseItemFields(await body(request));
+  const problem = guardCompletion(fields);
+  if (problem) return bad(problem);
+
+  return ok({ item: await createItem({ ...fields, planned: fields.planned ?? 0 }, userId) });
 });

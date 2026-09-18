@@ -12,8 +12,10 @@
  *      paint disappears — never a countdown to a date nobody chose.
  *
  *   2. The ground is pasta and ricotta, not grey. Warm before a single accent is
- *      spent. There is one accent — basil — and it means *cleared*: a permit
- *      granted, a thing no longer in your way.
+ *      spent. There is one accent — ragù — and it means *cleared*: a permit
+ *      granted, a thing no longer in your way. It costs the obvious reading of
+ *      green for done, and buys the dish; the cost is paid back by form, which
+ *      carries the meaning here more than colour does.
  *
  *   3. Form carries meaning before colour does. The spine down each row is the
  *      signalling system: solid is on track, segmented is overdue, dotted is
@@ -41,40 +43,42 @@
    ========================================================================== */
 
 :root {
-  /* The ground: a pasta sheet, and ricotta on top of it. */
-  --paper: #f9f2e3;
-  --surface: #fffaf0;
-  --sunken: #efe3cc;
+  /* The ground: a pasta sheet, and ricotta on top of it. Warmer than it was —
+     the sauce is the accent now, so the ground leans towards it. */
+  --paper: #faf1e4;
+  --surface: #fffaf2;
+  --sunken: #f0e4cf;
 
   /* Text. Roasted brown-black rather than grey — a neutral ink on this warm a
      ground reads as blue. */
-  --ink: #241a12;
-  --ink-2: #5c4a38;
+  --ink: #231a10;
+  --ink-2: #5d4a36;
   /* Not lighter than this. --ink-3 carries every eyebrow, hint and unit in the
-     app, all of it small text. This is 5.22:1 on paper. */
-  --ink-3: #766246;
+     app, all of it small text. This is 5.08:1 on paper. */
+  --ink-3: #79634a;
 
-  --line: #e7d9c0;
-  --line-strong: #cdb894;
+  --line: #e8dac2;
+  --line-strong: #cfba96;
 
-  /* The accent. Basil means *cleared*.
-     Green reads as "done", which is the correct meaning here rather than a lazy
-     one: the whole app is a list of approvals that are either granted or not.
-     And basil belongs in the dish. */
-  --basil: #3f6b33;
-  --basil-bright: #4f8a40;
-  --basil-wash: #e4eddd;
+  /* The accent. Ragù means *cleared*.
+     Adir asked for the sauce, knowing it costs the obvious reading of green for
+     done. Gentle rather than pillar-box: this is a simmered tomato, not a
+     warning light. 5.20:1 on surface, 4.83:1 on paper. */
+  --ragu: #b4472f;
+  --ragu-bright: #c85539;
+  --ragu-wash: #f7e4dd;
 
   /* Baked cheese. A deadline closing — soon, not yet wrong. */
   --cheese: #8a6008;
   --cheese-wash: #f7ecd3;
 
-  /* Reserved across the collection, and it means the same in all three apps:
-     this went wrong. Here that is overdue — and it is already the colour of the
-     ragù, which is a happy accident worth keeping. Only ever a thin mark or a
-     word, never a fill, which is what keeps it from reading as the accent. */
-  --break: #a52f28;
-  --break-wash: #f8e2dd;
+  /* Overdue, and the one real cost of a red accent: two reds on one screen.
+     They are separated by *value*, not hue — this wine is 2.27x darker than the
+     accent, which is what makes the board still parse in greyscale, and the
+     overdue spine is segmented where the on-track one is solid. Colour is the
+     third signal here, not the first. */
+  --break: #5f1f28;
+  --break-wash: #f2e0e2;
 
   /* The mark's own tones. The board is light and the rim beneath it darker;
      the paint is bright. These are deliberately NOT the text-safe accents — a
@@ -94,7 +98,7 @@
 
   /* The only shadow in the system, and it is warm rather than black — a black
      shadow on this ground reads as dirt. */
-  --lift: 0 1px 2px rgba(74, 48, 24, 0.05), 0 8px 24px -12px rgba(74, 48, 24, 0.2);
+  --lift: 0 1px 2px rgba(74, 40, 24, 0.05), 0 8px 24px -12px rgba(74, 40, 24, 0.2);
 
   --measure: 30rem;
   --pad: 1.15rem;
@@ -109,29 +113,34 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* The same dish, baked darker. Warm near-black, never slate. */
-    --paper: #14100c;
-    --surface: #1e1811;
+    --paper: #151009;
+    --surface: #201811;
     /* Lighter than the surface it sits on, not darker — a recessed token darker
        than its card is invisible on a dark page. */
-    --sunken: #2d2519;
+    --sunken: #2f2517;
 
-    --ink: #f6ecda;
-    --ink-2: #b6a68c;
-    --ink-3: #9b8a70;
+    --ink: #f7ece0;
+    --ink-2: #b8a894;
+    --ink-3: #9d8c78;
 
-    --line: #302719;
-    --line-strong: #4a3d28;
+    --line: #33291b;
+    --line-strong: #4d3f2a;
 
-    /* Lifted, because the same basil on near-black is muddy and fails contrast. */
-    --basil: #8cc47a;
-    --basil-bright: #8cc47a;
-    --basil-wash: #172316;
+    /* Lifted, because the same ragù on near-black is muddy and fails contrast. */
+    --ragu: #f08a6c;
+    --ragu-bright: #f08a6c;
+    --ragu-wash: #35180f;
 
     --cheese: #e3b24c;
-    --cheese-wash: #2a2110;
+    --cheese-wash: #2c2210;
 
-    --break: #ef7d64;
-    --break-wash: #2e1712;
+    /* Here the value trick is not available: on a dark ground both reds have to
+       be light enough to read, which compresses them into the same band — the
+       best separation achievable is 1.4x, against 2.27x in light. So dark leans
+       on hue instead, a cool rose against a warm orange, and on the segmented
+       form, which carries the meaning in either theme. */
+    --break: #e0a3ad;
+    --break-wash: #31161b;
 
     /* The board is pulled down a little so it does not glare on near-black,
        and the paint stays as it is — it is already bright enough to read. */
@@ -191,7 +200,7 @@ input, select, textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--basil);
+  outline: 2px solid var(--ragu);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -245,7 +254,7 @@ input, select, textarea {
 /* The collection's wordmark: the app name in the display face, followed by a
    full stop in the accent. */
 .brand__mark {
-  color: var(--basil);
+  color: var(--ragu);
 }
 
 .whoami {
@@ -372,7 +381,7 @@ input, select, textarea {
   font-size: 0.8rem;
 }
 
-.hero--open .hero__figure { color: var(--basil); }
+.hero--open .hero__figure { color: var(--ragu); }
 .hero--late .hero__figure { color: var(--break); }
 
 /* ==========================================================================
@@ -423,7 +432,7 @@ input, select, textarea {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: var(--radius-pill);
-  background: var(--basil-bright);
+  background: var(--ragu-bright);
 }
 
 .budget__over {
@@ -444,7 +453,7 @@ input, select, textarea {
 }
 
 .budget__over-label { color: var(--break); font-weight: 600; }
-.budget__under-label { color: var(--basil); font-weight: 600; }
+.budget__under-label { color: var(--ragu); font-weight: 600; }
 
 /* ==========================================================================
    Bands
@@ -557,7 +566,7 @@ button.row:hover {
 }
 
 .row--now::before {
-  background: var(--basil);
+  background: var(--ragu);
 }
 
 .row--overdue::before {
@@ -590,6 +599,11 @@ button.row:hover {
 }
 
 .row__title {
+  /* The row body is spans rather than divs, because it lives inside a button
+     and a button may not contain block-level elements. Spans are inline, so
+     every part of the stack has to be told to be a block or the title, the
+     description and the conclusion all run together on one line. */
+  display: block;
   font-weight: 500;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -605,6 +619,8 @@ button.row:hover {
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
+
+.row__money { display: block; }
 
 .row__meta {
   display: flex;
@@ -667,9 +683,9 @@ button.chip {
 }
 
 button.chip[aria-pressed='true'] {
-  border-color: var(--basil);
-  background: var(--basil-wash);
-  color: var(--basil);
+  border-color: var(--ragu);
+  background: var(--ragu-wash);
+  color: var(--ragu);
   font-weight: 600;
 }
 
@@ -714,12 +730,12 @@ button.chip[aria-pressed='true'] {
 
 .btn--primary {
   border-color: transparent;
-  background: var(--basil);
-  color: #fffaf0;
+  background: var(--ragu);
+  color: #fffaf2;
 }
 
 @media (prefers-color-scheme: dark) {
-  .btn--primary { color: #12210d; }
+  .btn--primary { color: #2b0f06; }
 }
 
 .btn--ghost {
@@ -884,15 +900,15 @@ textarea.input {
   padding: 0 1.25rem;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--basil);
-  color: #fffaf0;
+  background: var(--ragu);
+  color: #fffaf2;
   font-size: 0.95rem;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(74, 48, 24, 0.12), 0 12px 28px -12px rgba(74, 48, 24, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
-  .fab { color: #12210d; box-shadow: none; }
+  .fab { color: #2b0f06; box-shadow: none; }
 }
 
 /* Payments inside the item sheet. */
@@ -917,7 +933,7 @@ textarea.input {
 
 .ledger__when { color: var(--ink-3); font-size: 0.78rem; }
 .ledger__amount { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
-.ledger__amount--refund { color: var(--basil); }
+.ledger__amount--refund { color: var(--ragu); }
 .ledger__vat { color: var(--ink-3); font-size: 0.74rem; }
 
 /* ==========================================================================
@@ -1095,7 +1111,7 @@ select.input {
 
 .ptr--armed .ptr__mark {
   height: 2rem;
-  background: var(--basil);
+  background: var(--ragu);
 }
 
 .ptr__label {
@@ -1107,7 +1123,7 @@ select.input {
 }
 
 .ptr--armed .ptr__label {
-  color: var(--basil);
+  color: var(--ragu);
 }
 
 /* Segmented while it works, so the state differs in form and not only in
@@ -1116,7 +1132,7 @@ select.input {
   height: 2rem;
   background: repeating-linear-gradient(
     to bottom,
-    var(--basil) 0 5px,
+    var(--ragu) 0 5px,
     transparent 5px 10px
   );
 }
@@ -1130,4 +1146,290 @@ select.input {
 @keyframes ptr-travel {
   from { background-position: 0 0; }
   to   { background-position: 0 10px; }
+}
+
+/* ==========================================================================
+   The progress ring
+
+   A task's steps, drawn around its status chip. The ring is the fourth
+   orientation of the spine: a rail, a bar, a refresh mark, and now a circle.
+
+   A task with no steps shows an empty track rather than a 0% ring — unmeasured
+   and not-started are different things, and a full circle of nothing reads as
+   failure.
+   ========================================================================== */
+
+.ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.ring__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring__track {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 3;
+}
+
+.ring__value {
+  fill: none;
+  stroke: var(--ragu);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.ring--complete .ring__value { stroke: var(--ragu-bright); }
+
+.ring__count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  line-height: 1;
+}
+
+.ring__count--empty { color: var(--ink-3); }
+
+/* ==========================================================================
+   Bottom navigation
+
+   These are phone apps held in one hand, so the pages are reachable with a
+   thumb rather than from a menu at the top.
+   ========================================================================== */
+
+.nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 25;
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.4rem 0.6rem calc(0.4rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.nav::-webkit-scrollbar { display: none; }
+
+.nav__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  flex: 1 0 auto;
+  min-width: 3.9rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius);
+  color: var(--ink-3);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav__link[aria-current='page'] {
+  background: var(--ragu-wash);
+  color: var(--ragu);
+}
+
+/* The count of open work in that area, so the nav answers "where is the
+   pressure" without opening anything. */
+.nav__count {
+  font-size: 0.62rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* The nav is fixed, so every page has to end above it. */
+.shell {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+.fab {
+  bottom: calc(4.6rem + env(safe-area-inset-bottom));
+}
+
+@supports (padding: max(0px)) {
+  .fab {
+    bottom: max(4.6rem, calc(env(safe-area-inset-bottom) + 4.2rem));
+  }
+}
+
+/* ==========================================================================
+   Locked tasks, and who touched them last
+   ========================================================================== */
+
+.lockbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  background: var(--cheese-wash);
+  color: var(--cheese);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.lockbar__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lockbar__dot { animation: pulse 1.6s ease-in-out infinite; }
+}
+
+/* A task somebody else is holding, in the list. */
+.row--held { opacity: 0.72; }
+
+.row__held {
+  color: var(--cheese);
+  font-weight: 600;
+}
+
+.stamp {
+  margin-top: 0.75rem;
+  color: var(--ink-3);
+  font-size: 0.74rem;
+}
+
+/* ==========================================================================
+   Description and conclusion, under each task
+   ========================================================================== */
+
+.blurb {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.blurb--conclusion {
+  margin-top: 0.3rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--ragu);
+  color: var(--ink-2);
+}
+
+.blurb__label {
+  display: block;
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Stat tiles, for the overview
+   ========================================================================== */
+
+.tiles {
+  display: grid;
+  /* minmax(0, 1fr) rather than 1fr: a grid track's default minimum is its
+     content, so one long figure pushes the whole row past the edge of the
+     screen and the third tile's label is clipped. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.tile {
+  padding: 0.8rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+}
+
+.tile__figure {
+  font-family: var(--font-display);
+  font-weight: 700;
+  /* Shrinks with the viewport, because "₪184,000" and "4" share this slot. */
+  font-size: clamp(0.95rem, 4.6vw, 1.5rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.tile__label {
+  margin-top: 0.25rem;
+  overflow-wrap: anywhere;
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tile--overdue .tile__figure { color: var(--break); }
+.tile--done .tile__figure { color: var(--ragu); }
+
+/* A person's line on the overview: name, their bar, their numbers. */
+.person {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem var(--pad);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  width: 100%;
+  text-align: left;
+}
+
+.person__body { flex: 1; min-width: 0; }
+
+.person__name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person__bar {
+  height: var(--spine);
+  margin-top: 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.person__fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--ragu-bright);
+}
+
+.person__meta {
+  margin-top: 0.3rem;
+  color: var(--ink-3);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
 }

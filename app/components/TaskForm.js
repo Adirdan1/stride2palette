@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { CATEGORIES, STATUSES } from '@/lib/core.js';
+import { STATUSES } from '@/lib/core.js';
 
 const STATUS_LABEL = {
   todo: 'To do',
@@ -12,11 +11,16 @@ const STATUS_LABEL = {
 };
 
 /** Shared by adding and editing, so the two can never drift apart. */
-export default function ItemForm({ value, users, onChange }) {
+export default function TaskForm({ value, users, domains, onChange, disabled = false }) {
   const set = (patch) => onChange({ ...value, ...patch });
 
+  const toggleDomain = (key) => {
+    const has = value.domains.includes(key);
+    set({ domains: has ? value.domains.filter((d) => d !== key) : [...value.domains, key] });
+  };
+
   return (
-    <>
+    <fieldset disabled={disabled} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
       <label className="field">
         <span className="field__label">What</span>
         <input
@@ -24,7 +28,16 @@ export default function ItemForm({ value, users, onChange }) {
           value={value.title}
           onChange={(e) => set({ title: e.target.value })}
           placeholder="Alcohol licence application"
-          autoFocus
+        />
+      </label>
+
+      <label className="field">
+        <span className="field__label">Description</span>
+        <textarea
+          className="input"
+          value={value.description ?? ''}
+          onChange={(e) => set({ description: e.target.value })}
+          placeholder="What this actually involves, and anything whoever picks it up will need."
         />
       </label>
 
@@ -50,21 +63,40 @@ export default function ItemForm({ value, users, onChange }) {
         )}
       </div>
 
+      <label className="field">
+        <span className="field__label">
+          Conclusion{value.status === 'done' ? ' — required' : ''}
+        </span>
+        <textarea
+          className="input"
+          value={value.conclusion ?? ''}
+          onChange={(e) => set({ conclusion: e.target.value })}
+          placeholder="What happened in the end. Which supplier, what the inspector said, what it cost."
+        />
+        <span className="field__hint">
+          Has to be filled in before this can be marked done. Three months from now this is the
+          only record of how it went.
+        </span>
+      </label>
+
       <div className="field">
-        <span className="field__label">Kind</span>
+        <span className="field__label">Areas</span>
         <div className="chipbar">
-          {CATEGORIES.map((category) => (
+          {domains.map((domain) => (
             <button
-              key={category}
+              key={domain.key}
               type="button"
               className="chip"
-              aria-pressed={value.category === category}
-              onClick={() => set({ category })}
+              aria-pressed={value.domains.includes(domain.key)}
+              onClick={() => toggleDomain(domain.key)}
             >
-              {category}
+              {domain.label}
             </button>
           ))}
         </div>
+        <p className="field__hint">
+          Pick as many as apply — the task shows up on every one of those pages.
+        </p>
       </div>
 
       <div className="row-2">
@@ -89,53 +121,41 @@ export default function ItemForm({ value, users, onChange }) {
           />
         </label>
       </div>
-      <p className="field__hint" style={{ marginTop: '-0.5rem' }}>
-        Amounts are what the invoice says, VAT included. Leave the date empty if there isn’t one —
-        undated is a real answer here, not a gap.
-      </p>
-
-      {users.length > 0 && (
-        <label className="field" style={{ marginTop: '0.85rem' }}>
-          <span className="field__label">Whose job</span>
-          <select
-            className="input"
-            value={value.ownerId ?? ''}
-            onChange={(e) => set({ ownerId: e.target.value })}
-          >
-            <option value="">Nobody yet</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>{user.displayName}</option>
-            ))}
-          </select>
-        </label>
-      )}
 
       <label className="field">
-        <span className="field__label">Notes</span>
-        <textarea
+        <span className="field__label">Whose job</span>
+        <select
           className="input"
-          value={value.note ?? ''}
-          onChange={(e) => set({ note: e.target.value })}
-          placeholder="Reference numbers, who you spoke to, what they said"
-        />
+          value={value.ownerId ?? ''}
+          onChange={(e) => set({ ownerId: e.target.value })}
+        >
+          <option value="">Nobody yet</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>{user.displayName}</option>
+          ))}
+        </select>
       </label>
-    </>
+    </fieldset>
   );
 }
 
-export function emptyItem() {
-  return { title: '', status: 'todo', category: 'other', due: '', planned: '', ownerId: '', note: '' };
+export function emptyTask() {
+  return {
+    title: '', status: 'todo', description: '', conclusion: '',
+    domains: [], due: '', planned: '', ownerId: '',
+  };
 }
 
 export function toForm(item) {
   return {
     title: item.title,
     status: item.status,
-    category: item.category,
+    description: item.description ?? '',
+    conclusion: item.conclusion ?? '',
+    domains: item.domains ?? [],
     due: item.due ?? '',
     planned: item.planned ? (item.planned / 100).toFixed(2) : '',
     ownerId: item.ownerId ?? '',
-    note: item.note ?? '',
   };
 }
 
