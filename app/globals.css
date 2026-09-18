@@ -536,11 +536,14 @@ input, select, textarea {
   gap: 0.75rem;
   width: 100%;
   min-height: 2.75rem;
-  padding: 0.7rem var(--pad) 0.7rem calc(var(--pad) + 0.5rem);
+  /* Logical, not physical: the row carries dir="auto", so a Hebrew task flips
+     the whole box. The extra half-rem has to stay on the side the spine is on. */
+  padding: 0.7rem;
+  padding-inline: calc(var(--pad) + 0.5rem) var(--pad);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  text-align: left;
+  text-align: start;
 }
 
 button.row {
@@ -559,7 +562,7 @@ button.row:hover {
   position: absolute;
   top: 0.65rem;
   bottom: 0.65rem;
-  left: 0.55rem;
+  inset-inline-start: 0.55rem;
   width: var(--spine);
   border-radius: var(--radius-pill);
   background: var(--line-strong);
@@ -634,7 +637,7 @@ button.row:hover {
 
 .row__money {
   flex-shrink: 0;
-  text-align: right;
+  text-align: end;
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
   line-height: 1.35;
@@ -1206,48 +1209,55 @@ select.input {
 /* ==========================================================================
    Bottom navigation
 
-   These are phone apps held in one hand, so the pages are reachable with a
-   thumb rather than from a menu at the top.
+   Two rows, because nine destinations do not fit across a phone in one and a
+   row that scrolls hides whatever falls off the end. Whole-venue pages on top,
+   areas below — a meaningful split, which reads faster than nine equal cells.
    ========================================================================== */
 
 .nav {
   position: fixed;
   inset: auto 0 0 0;
   z-index: 25;
-  display: flex;
-  gap: 0.1rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom));
+  padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   backdrop-filter: blur(12px);
-  /* Fade both ends, so the row visibly continues past the edge of the screen.
-     Without this the last destinations are simply cut off and read as absent —
-     which is exactly how Marketing and Brand got reported missing. */
-  mask-image: linear-gradient(to right, transparent 0, #000 0.75rem, #000 calc(100% - 0.75rem), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.75rem, #000 calc(100% - 0.75rem), transparent 100%);
-  scroll-padding-inline: 1rem;
 }
 
-.nav::-webkit-scrollbar { display: none; }
+.nav__row {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.nav__row--main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.nav__row--areas {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 0.2rem;
+}
 
 .nav__link {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  flex: 1 0 auto;
-  min-width: 3.5rem;
-  min-height: 2.75rem;
-  padding: 0.3rem 0.4rem;
+  gap: 0.1rem;
+  min-width: 0;
+  min-height: 2.6rem;
+  padding: 0.3rem 0.2rem;
   border-radius: var(--radius);
   color: var(--ink-3);
-  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
   text-decoration: none;
+}
+
+.nav__row--main .nav__link { font-size: 0.75rem; }
+.nav__row--areas .nav__link { min-height: 2.5rem; font-size: 0.58rem; }
+
+.nav__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1259,24 +1269,24 @@ select.input {
 /* The count of open work in that area, so the nav answers "where is the
    pressure" without opening anything. */
 .nav__count {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
 }
 
-/* The nav is fixed, so every page has to end above it. */
+/* The nav is fixed and now two rows tall, so every page has to end above it. */
 .shell {
-  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom));
 }
 
 .fab {
-  bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  bottom: calc(6.2rem + env(safe-area-inset-bottom));
 }
 
 @supports (padding: max(0px)) {
   .fab {
-    bottom: max(4.6rem, calc(env(safe-area-inset-bottom) + 4.2rem));
+    bottom: max(6.2rem, calc(env(safe-area-inset-bottom) + 5.8rem));
   }
 }
 
@@ -1438,4 +1448,159 @@ select.input {
   color: var(--ink-3);
   font-size: 0.76rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Nested steps
+
+   Up to five levels. The indent is a rule rather than padding alone, so on a
+   phone you can still tell which parent a deep step belongs to after its text
+   has wrapped.
+   ========================================================================== */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps--nested {
+  margin-top: 0.15rem;
+  margin-inline-start: 0.7rem;
+  padding-inline-start: 0.7rem;
+  border-inline-start: 2px solid var(--line);
+}
+
+.steps__row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-sm);
+}
+
+.steps__box {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  accent-color: var(--ragu);
+}
+
+.steps__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.steps__title--done {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.steps__actions {
+  display: flex;
+  gap: 0.1rem;
+  flex-shrink: 0;
+}
+
+.steps__action {
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.steps__action:disabled { opacity: 0.4; }
+
+.steps__add {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+/* ==========================================================================
+   The fund chart
+
+   One series, so no legend: the heading names it and the accent carries it.
+   Grid and axes are recessive; the target is a reference rule, not a series.
+   ========================================================================== */
+
+.chart {
+  margin: 0.8rem 0 0;
+}
+
+.chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.chart__area {
+  fill: var(--ragu);
+  opacity: 0.14;
+}
+
+.chart__line {
+  fill: none;
+  stroke: var(--ragu);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart__target {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+
+.chart__targetLabel {
+  fill: var(--ink-3);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.chart__crosshair {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+/* A 2px surface ring, so the marker reads over the line it sits on. */
+.chart__dot {
+  fill: var(--ragu);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.chart__caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.chart__value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__when {
+  color: var(--ink-3);
+  font-size: 0.76rem;
 }

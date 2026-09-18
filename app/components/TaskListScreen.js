@@ -75,7 +75,7 @@ export default function TaskListScreen({
     <Screen me={me} domains={domains} openByDomain={openByDomain} settings={settings} users={users}>
       <section className="band" style={{ marginTop: '0.25rem' }}>
         <div className="band__head">
-          <h1 className="sheet__title">{heading}</h1>
+          <h1 className="sheet__title" dir="auto">{heading}</h1>
           <span className="band__count">{plural(items.length, 'task')}</span>
         </div>
       </section>
@@ -100,7 +100,7 @@ export default function TaskListScreen({
                     item={item}
                     today={today}
                     spent={spend[item.id] ?? 0}
-                    owner={byId.get(item.ownerId)}
+                    owners={(item.owners ?? []).map((id) => byId.get(id)).filter(Boolean)}
                     steps={subtasksOf(item.id, subtasks)}
                     holder={byId.get(item.lockedBy)}
                     viewerId={me?.id}

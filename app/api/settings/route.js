@@ -1,4 +1,4 @@
-import { isDate } from '@/lib/core.js';
+import { isDate, parseAgorot } from '@/lib/core.js';
 import { getSettings, updateSettings } from '@/lib/repo.js';
 import { bad, body, handler, ok } from '@/lib/routes.js';
 
@@ -32,6 +32,12 @@ export const PATCH = handler(async (request) => {
       return bad(`${raw.timezone} is not a timezone I recognise.`);
     }
     patch.timezone = raw.timezone;
+  }
+
+  if ('fundTarget' in raw) {
+    const target = raw.fundTarget === '' || raw.fundTarget == null ? 0 : parseAgorot(raw.fundTarget);
+    if (target === null || target < 0) return bad('That fund target is not an amount I can read.');
+    patch.fundTarget = target;
   }
 
   if (Object.keys(patch).length === 0) return bad('Nothing to change.');

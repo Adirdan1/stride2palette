@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  directionOf,
   BANDS,
   CONCLUSION_REQUIRED,
   LOCK_LEASE_MS,
@@ -29,8 +30,15 @@ import {
   isOverdue,
   isStatus,
   overviewStats,
+  MAX_SUBTASK_DEPTH,
+  buildSubtaskTree,
+  canNestUnder,
+  depthOf,
+  ownedBy,
   subtaskProgress,
+  unowned,
   subtasksOf,
+  summariseFund,
   summarisePeople,
   isValidPin,
   isValidUsername,
@@ -48,7 +56,7 @@ const item = (over = {}) => ({
   id: over.id ?? 'i1',
   title: over.title ?? 'Thing',
   domains: over.domains ?? [],
-  ownerId: over.ownerId ?? null,
+  owners: over.owners ?? [],
   status: over.status ?? 'todo',
   due: over.due ?? null,
   planned: over.planned ?? 0,
@@ -220,6 +228,35 @@ describe('parseAgorot', () => {
 });
 
 // ---------------------------------------------------------------------------
+describe('text direction', () => {
+  it('reads a Hebrew title as right-to-left', () => {
+    expect(directionOf('הכרעה: כשרות וימי פתיחה')).toBe('rtl');
+  });
+
+  it('reads an English title as left-to-right', () => {
+    expect(directionOf('Alcohol licence')).toBe('ltr');
+  });
+
+  it('ignores leading digits and punctuation', () => {
+    expect(directionOf('2026 — תאריך לטעימות')).toBe('rtl');
+    expect(directionOf('2026 — tasting date')).toBe('ltr');
+  });
+
+  it('takes the first strong character, not the majority', () => {
+    // A Hebrew task whose description happens to open in English still has a
+    // Hebrew title; only the title is ever passed in.
+    expect(directionOf('Wi-Fi לעסק')).toBe('ltr');
+    expect(directionOf('רישיון Wi-Fi')).toBe('rtl');
+  });
+
+  it('falls back to left-to-right for text with no strong character', () => {
+    expect(directionOf('123 — 456')).toBe('ltr');
+    expect(directionOf('')).toBe('ltr');
+    expect(directionOf(undefined)).toBe('ltr');
+    expect(directionOf(null)).toBe('ltr');
+  });
+});
+
 describe('items', () => {
   it('knows its own vocabulary', () => {
     expect(STATUSES).toEqual(['todo', 'doing', 'waiting', 'done', 'dropped']);
@@ -691,10 +728,10 @@ describe('summarisePeople', () => {
 
   it('counts each person’s workload', () => {
     const items = [
-      item({ id: 'a', ownerId: 'u1', status: 'done' }),
-      item({ id: 'b', ownerId: 'u1' }),
-      item({ id: 'c', ownerId: 'u1', due: '2026-01-01' }),
-      item({ id: 'd', ownerId: 'u2' }),
+      item({ id: 'a', owners: ['u1'], status: 'done' }),
+      item({ id: 'b', owners: ['u1'] }),
+      item({ id: 'c', owners: ['u1'], due: '2026-01-01' }),
+      item({ id: 'd', owners: ['u2'] }),
     ];
     const { people } = summarisePeople(items, users, today);
     const ido = people.find((row) => row.user.id === 'u1');
@@ -705,15 +742,15 @@ describe('summarisePeople', () => {
   it('surfaces unowned work rather than hiding it', () => {
     // A task nobody owns is the most likely one to be missed, so a page about
     // who is doing what has to say so out loud.
-    const { unassigned } = summarisePeople([item({ id: 'x', ownerId: null })], users, today);
+    const { unassigned } = summarisePeople([item({ id: 'x', owners: [] })], users, today);
     expect(unassigned).toMatchObject({ user: null, total: 1, open: 1 });
   });
 
   it('puts the busiest person first', () => {
     const items = [
-      item({ id: 'a', ownerId: 'u2' }),
-      item({ id: 'b', ownerId: 'u2' }),
-      item({ id: 'c', ownerId: 'u1' }),
+      item({ id: 'a', owners: ['u2'] }),
+      item({ id: 'b', owners: ['u2'] }),
+      item({ id: 'c', owners: ['u1'] }),
     ];
     expect(summarisePeople(items, users, today).people[0].user.id).toBe('u2');
   });
@@ -730,8 +767,8 @@ describe('overviewStats', () => {
 
   it('reports work and money for the venue', () => {
     const items = [
-      item({ id: 'a', ownerId: 'u1', status: 'done', planned: 100000 }),
-      item({ id: 'b', ownerId: 'u1', planned: 50000, due: '2026-01-01' }),
+      item({ id: 'a', owners: ['u1'], status: 'done', planned: 100000 }),
+      item({ id: 'b', owners: ['u1'], planned: 50000, due: '2026-01-01' }),
     ];
     const payments = [payment({ itemId: 'a', gross: 90000 })];
     const stats = overviewStats(items, payments, users, { targetOpenDate: '2026-12-01' }, today);
@@ -757,5 +794,147 @@ describe('overviewStats', () => {
     expect(stats.work).toEqual({ total: 0, done: 0, open: 0, overdue: 0 });
     expect(stats.money).toEqual({ expected: 0, spent: 0, remaining: 0, variance: 0 });
     expect(stats.hero.kind).toBe('remaining');
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe('several owners on one task', () => {
+  const today = '2026-09-18';
+  const users = [
+    { id: 'u1', displayName: 'Ido' },
+    { id: 'u2', displayName: 'Adi' },
+    { id: 'u3', displayName: 'Adir' },
+  ];
+
+  it('counts a shared task for every owner', () => {
+    // The totals deliberately do not sum to the number of tasks. Three people on
+    // the partnership agreement are all three responsible for it, not a third
+    // each — this measures what each is carrying, not how work is partitioned.
+    const items = [item({ id: 'a', owners: ['u1', 'u2', 'u3'] })];
+    const { people } = summarisePeople(items, users, today);
+    expect(people.every((row) => row.total === 1 && row.open === 1)).toBe(true);
+  });
+
+  it('treats an empty owner list as unowned', () => {
+    const { unassigned, people } = summarisePeople([item({ owners: [] })], users, today);
+    expect(unassigned.total).toBe(1);
+    expect(people.every((row) => row.total === 0)).toBe(true);
+  });
+
+  it('filters by owner and by having none', () => {
+    const items = [
+      item({ id: 'a', owners: ['u1', 'u2'] }),
+      item({ id: 'b', owners: ['u2'] }),
+      item({ id: 'c', owners: [] }),
+    ];
+    expect(ownedBy(items, 'u1').map((i) => i.id)).toEqual(['a']);
+    expect(ownedBy(items, 'u2').map((i) => i.id)).toEqual(['a', 'b']);
+    expect(unowned(items).map((i) => i.id)).toEqual(['c']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe('nested steps', () => {
+  const step = (id, parentId = null, over = {}) => ({
+    id, itemId: 'i1', parentId, title: over.title ?? id, done: over.done ?? false,
+    position: over.position ?? 0,
+  });
+
+  it('builds a tree', () => {
+    const tree = buildSubtaskTree([step('a'), step('a1', 'a'), step('a2', 'a'), step('b')]);
+    expect(tree.map((n) => n.id)).toEqual(['a', 'b']);
+    expect(tree[0].children.map((n) => n.id)).toEqual(['a1', 'a2']);
+    expect(tree[1].children).toEqual([]);
+  });
+
+  it('lifts an orphan to the top rather than dropping it', () => {
+    // Losing somebody's step because its parent was deleted underneath it is far
+    // worse than showing it in the wrong place.
+    const tree = buildSubtaskTree([step('a'), step('lost', 'gone')]);
+    expect(tree.map((n) => n.id).sort()).toEqual(['a', 'lost']);
+  });
+
+  it('measures depth from one', () => {
+    const rows = [step('a'), step('b', 'a'), step('c', 'b'), step('d', 'c'), step('e', 'd')];
+    expect(depthOf('a', rows)).toBe(1);
+    expect(depthOf('c', rows)).toBe(3);
+    expect(depthOf('e', rows)).toBe(5);
+  });
+
+  it('allows five levels and refuses a sixth', () => {
+    const rows = [step('a'), step('b', 'a'), step('c', 'b'), step('d', 'c'), step('e', 'd')];
+    expect(MAX_SUBTASK_DEPTH).toBe(5);
+    expect(canNestUnder(null, rows)).toBe(true);
+    expect(canNestUnder('d', rows)).toBe(true);   // the child would be level 5
+    expect(canNestUnder('e', rows)).toBe(false);  // the child would be level 6
+  });
+
+  it('counts every step at any depth towards progress', () => {
+    const rows = [step('a', null, { done: true }), step('b', 'a'), step('c', 'b', { done: true })];
+    expect(subtaskProgress(rows)).toEqual({ done: 2, total: 3, fraction: 2 / 3 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe('the shared fund', () => {
+  const users = [
+    { id: 'u1', displayName: 'Ido' },
+    { id: 'u2', displayName: 'Adi' },
+  ];
+  const dep = (userId, amount, depositedOn) => ({ id: `${userId}${amount}`, userId, amount, depositedOn });
+
+  it('sums the pot and splits it by person', () => {
+    const fund = summariseFund([
+      dep('u1', 100000, '2026-09-01'),
+      dep('u2', 50000, '2026-09-02'),
+      dep('u1', 25000, '2026-09-03'),
+    ], users, 0);
+
+    expect(fund.balance).toBe(175000);
+    expect(fund.people.find((p) => p.user.id === 'u1')).toMatchObject({ total: 125000, count: 2 });
+    expect(fund.people.find((p) => p.user.id === 'u2')).toMatchObject({ total: 50000, count: 1 });
+  });
+
+  it('treats a withdrawal as a negative deposit', () => {
+    // The pot is a ledger: editing history away loses the record of what moved.
+    const fund = summariseFund([dep('u1', 100000, '2026-09-01'), dep('u1', -30000, '2026-09-05')], users, 0);
+    expect(fund.balance).toBe(70000);
+    expect(fund.people[0].count).toBe(2);
+  });
+
+  it('builds a cumulative series, one point per day that moved', () => {
+    const fund = summariseFund([
+      dep('u1', 10000, '2026-09-03'),
+      dep('u2', 5000, '2026-09-01'),
+      dep('u1', 5000, '2026-09-01'),
+    ], users, 0);
+
+    expect(fund.series).toEqual([
+      { date: '2026-09-01', change: 10000, balance: 10000 },
+      { date: '2026-09-03', change: 10000, balance: 20000 },
+    ]);
+  });
+
+  it('reports progress only when a target is set', () => {
+    const none = summariseFund([dep('u1', 50000, '2026-09-01')], users, 0);
+    expect(none.fraction).toBe(0);
+    expect(none.remaining).toBe(0);
+
+    const some = summariseFund([dep('u1', 50000, '2026-09-01')], users, 200000);
+    expect(some.fraction).toBe(0.25);
+    expect(some.remaining).toBe(150000);
+  });
+
+  it('caps a full pot at one and never owes a negative remainder', () => {
+    const over = summariseFund([dep('u1', 300000, '2026-09-01')], users, 200000);
+    expect(over.fraction).toBe(1);
+    expect(over.remaining).toBe(0);
+  });
+
+  it('holds up with nothing in it', () => {
+    const fund = summariseFund([], users, 0);
+    expect(fund.balance).toBe(0);
+    expect(fund.series).toEqual([]);
+    expect(fund.people).toHaveLength(2);
   });
 });

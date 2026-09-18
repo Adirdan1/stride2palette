@@ -40,7 +40,10 @@ export function parseItemFields(raw, { partial = false } = {}) {
     fields.planned = planned;
   }
 
-  if ('ownerId' in raw) fields.ownerId = raw.ownerId || null;
+  if ('owners' in raw) {
+    if (!Array.isArray(raw.owners)) throw new Error('Owners must be a list.');
+    fields.owners = [...new Set(raw.owners.map(String))].filter(Boolean);
+  }
   if ('note' in raw) fields.note = String(raw.note ?? '').trim() || null;
   if ('position' in raw) fields.position = Number(raw.position) || 0;
 

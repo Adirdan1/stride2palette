@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { ownedBy, unowned } from '@/lib/core.js';
 import { pageData } from '@/lib/pages.js';
 import TaskListScreen from '../../components/TaskListScreen.js';
 
@@ -13,8 +14,7 @@ export default async function Page({ params }) {
   const person = who === 'unassigned' ? null : data.users.find((user) => user.username === who);
   if (who !== 'unassigned' && !person) notFound();
 
-  const items = data.items.filter((item) =>
-    person ? item.ownerId === person.id : !item.ownerId);
+  const items = person ? ownedBy(data.items, person.id) : unowned(data.items);
 
   return (
     <TaskListScreen
