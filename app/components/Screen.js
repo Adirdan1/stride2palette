@@ -22,6 +22,21 @@ export function useSettingsSheet() {
 }
 
 /**
+ * The top bar's action slot, claimed from inside the page.
+ *
+ * The shell owns the bar but does not know what the page's primary action is,
+ * and the page that knows is several levels down. A list registers its own
+ * "add" when it is the kind of list you can add to, and releases it on the way
+ * out — which also means a page showing several lists can simply have none of
+ * them claim it, rather than the shell having to arbitrate.
+ */
+const ActionContext = createContext(null);
+
+export function useScreenAction() {
+  return useContext(ActionContext);
+}
+
+/**
  * The frame every page sits in: pull-to-refresh at the top, navigation at the
  * bottom, and a poll keeping both in step with whatever everybody else is
  * doing.
@@ -37,6 +52,10 @@ export default function Screen({ me, domains, openByDomain, settings, users, act
     setShowSettings(true);
   }, []);
   const settingsApi = useMemo(() => ({ open: openSettings }), [openSettings]);
+
+  const [claimed, setClaimed] = useState(null);
+  const actionApi = useMemo(() => ({ set: setClaimed }), []);
+  const shown = action ?? claimed;
 
   return (
     <main className="shell">
@@ -55,12 +74,12 @@ export default function Screen({ me, domains, openByDomain, settings, users, act
               list. A bottom-corner button covers whatever it floats over, and
               with right-aligned Hebrew that is the start of every line it
               passes — not the trailing whitespace it covers in English. */}
-          {action && (
+          {shown && (
             <button
               type="button"
               className="topbar__action"
-              onClick={action.onClick}
-              aria-label={action.label}
+              onClick={shown.onClick}
+              aria-label={shown.label}
             >
               <span aria-hidden="true">+</span>
             </button>
@@ -76,7 +95,9 @@ export default function Screen({ me, domains, openByDomain, settings, users, act
         </div>
       </header>
 
-      <SettingsContext.Provider value={settingsApi}>{children}</SettingsContext.Provider>
+      <SettingsContext.Provider value={settingsApi}>
+        <ActionContext.Provider value={actionApi}>{children}</ActionContext.Provider>
+      </SettingsContext.Provider>
 
       <Nav domains={domains} openByDomain={openByDomain} />
 

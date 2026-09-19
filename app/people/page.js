@@ -11,6 +11,11 @@ export default async function Page() {
   return (
     <PeopleScreen
       people={summarisePeople(data.items, data.users, data.today)}
+      items={data.items}
+      subtasks={data.subtasks}
+      payments={data.payments}
+      spend={data.spend}
+      today={data.today}
       me={data.me}
       domains={data.domains}
       openByDomain={data.openByDomain}
