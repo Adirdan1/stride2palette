@@ -15,6 +15,11 @@ const jsxInJs = {
 export default defineConfig({
   plugins: [jsxInJs],
   esbuild: { jsx: 'automatic' },
-  resolve: { alias: { '@': new URL('.', import.meta.url).pathname.replace(/\/$/, '') } },
+  resolve: {
+    alias: {
+      '@': new URL('.', import.meta.url).pathname.replace(/\/$/, ''),
+      'next/navigation': new URL('./test/stubs/next-navigation.js', import.meta.url).pathname,
+    },
+  },
   test: { include: ['test/**/*.probe.test.jsx'], environment: 'node' },
 });

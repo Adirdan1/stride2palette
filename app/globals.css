@@ -1564,8 +1564,45 @@ select.input {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+  color: inherit;
   width: 100%;
-  text-align: left;
+  /* start, not left: this row is a name, and some of the names are Hebrew. */
+  text-align: start;
+}
+
+button.person {
+  appearance: none;
+  cursor: pointer;
+}
+
+button.person:hover { border-color: var(--line-strong); }
+
+/* One person's work, opened under them.
+ *
+ * Hangs off a rule the same way a task's steps do, one level out — the device
+ * is worth repeating because it is answering the same question in both places:
+ * is this the next thing in the list, or the inside of the thing above it. */
+.person__work {
+  margin-top: 0.1rem;
+  margin-inline-start: var(--pad);
+  padding-inline-start: 0.9rem;
+  padding-block: 0.1rem 0.5rem;
+  border-inline-start: 2px solid var(--line);
+}
+
+/* Nested, the bands are closer together and their headings quieter: at this
+   depth they are labels inside somebody's row, not sections of the page. */
+.band--nested {
+  margin-top: 0.7rem;
+}
+
+.band--nested:first-child {
+  margin-top: 0.45rem;
+}
+
+.band--nested .band__title {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
 }
 
 .person__body { flex: 1; min-width: 0; }
@@ -1590,6 +1627,12 @@ select.input {
   border-radius: var(--radius-pill);
   background: var(--ragu-bright);
 }
+
+/* The line is LTR so "0 of 3 done" keeps its leading number, but inside an RTL
+   row it still has to sit under the name rather than drifting to the far side.
+   Physical `right`, because the element itself is LTR and `end` would resolve
+   against that rather than against the row. */
+[dir='rtl'] .person__meta { text-align: right; }
 
 .person__meta {
   margin-top: 0.3rem;

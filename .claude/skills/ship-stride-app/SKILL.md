@@ -1140,3 +1140,37 @@ width is `auto` with `max-width: calc(100% - <indent>)`. The probe caught it
 because it reports the box's left edge, not just whether the page scrolls —
 **an element can overflow its container without the page overflowing**, so
 assert the box, not the symptom.
+
+**28. If tapping something navigates to a list you could have shown in place,
+show it in place — and that means the list is a component, not a page.**
+Tapping a person went to `/people/<name>`. Comparing two people's loads was the
+entire point of that screen, and it cost two page transitions and a back button
+to do once.
+
+The block was structural rather than cosmetic: the list lived inside the screen
+that rendered the shell, so there was no way to put one anywhere else. Pulling
+`TaskList` out of `TaskListScreen` made a domain page *one* of these inside the
+shell and the people page *several*, one under each person. **A screen that
+wraps a list should be thin enough to throw away.** Everything that makes the
+list behave — which tasks have their steps open, the edit sheet, ticking,
+writing a step up — travels with the list, so several on one page keep their
+own state and do not interfere.
+
+**The top bar's action has to be claimable from inside.** The shell owns the
+bar; the component that knows what "add" means is several levels down. A list
+registers its action on mount and releases it on unmount (`useScreenAction`),
+which also settles the many-lists case by itself: the people page's lists pass
+`canAdd={false}`, none of them claim it, and the bar stays honest — a task added
+from there would have no domain, and a task with no domain appears on none of
+the six pages people work from.
+
+**A leading number in an RTL paragraph moves to the far end.** `0 of 3 done ·
+3 open` rendered as `of 3 done · 3 open 0` the moment the row took `dir="rtl"`
+for the Hebrew name above it. Digits are weak characters: they attach to the
+base direction, not to the English that follows them. An English line inside an
+RTL row needs its own `dir="ltr"` — and then `text-align: right` to sit back
+under the name, physically, because `end` now resolves against the line's own
+LTR direction rather than the row's.
+
+Nested lists drop their empty bands. Under a person, five headings saying
+"none" is not information; you opened it to see what they are carrying.

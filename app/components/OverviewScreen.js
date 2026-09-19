@@ -137,7 +137,7 @@ export default function OverviewScreen({ stats, today, me, domains, openByDomain
                       style={{ width: `${total === 0 ? 0 : (done / total) * 100}%` }}
                     />
                   </div>
-                  <p className="person__meta">
+                  <p className="person__meta" dir="ltr">
                     {done} of {total} done · {open} open
                     {overdue > 0 && <> · <span className="due--overdue">{overdue} overdue</span></>}
                   </p>
@@ -150,7 +150,7 @@ export default function OverviewScreen({ stats, today, me, domains, openByDomain
               <div className="person">
                 <div className="person__body">
                   <p className="person__name" style={{ color: 'var(--ink-3)' }}>Nobody yet</p>
-                  <p className="person__meta">
+                  <p className="person__meta" dir="ltr">
                     {plural(people.unassigned.open, 'task')} with no owner
                   </p>
                 </div>
