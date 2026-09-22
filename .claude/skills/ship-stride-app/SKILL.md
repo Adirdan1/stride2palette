@@ -386,6 +386,9 @@ What is actually there:
 | `stride2mortgage` | `public` (stride2mortgage) |
 | 3 others | paused, and paused projects do not count against the limit |
 
+**Superseded 2026-09-22 — see the consolidation note below. The current layout
+is `Stride` (six schemas) + `stride2palette`.**
+
 **Updated 2026-09-17, building stride2palette.** Adir chose a dedicated project
 for this app and freed the slot by pausing `stride2mortgage`. The active pair is
 now `Stride` and `stride2palette`. This is the first app in the collection to take
@@ -410,6 +413,36 @@ this collection makes worth knowing:**
    data loss, and above all **do not "repair" it by re-running migrations
    against a half-restored database.** Wait for `ACTIVE_HEALTHY`, then look
    again.
+
+**Consolidated 2026-09-22.** `wealth`, `third` and the mortgage `public` tables
+were moved out of the `stride2mortgage` project into `Stride`. Current layout:
+
+| Supabase project | holds |
+| --- | --- |
+| `Stride` | `public` (Stride fitness **and** stride2mortgage), `edu`, `sap`, `stride2do`, `wealth` (stride2wealth), `third` (stride2third) |
+| `stride2palette` | `public` — its own project, separate credential |
+| `stride2mortgage` | **paused, empty of purpose** — kept as the rollback, delete once confident |
+| 3 others | paused |
+
+**Point 1 above has a mechanism, and it is not flakiness.** The cap is
+**two active projects per owner**, and **creating a third silently evicts an
+existing one.** Creating `stride2palette` on 2026-09-17 is what reclaimed
+`stride2mortgage` — the pause did "stick", it just was not the whole story.
+Three weeks later this presented as `NXDOMAIN` on `hjfjkfuvfxretdaozyjm` and
+three dead apps, and **NXDOMAIN is what a reclaimed project looks like**, not
+only a deleted one. An `INACTIVE` project loses its DNS. So:
+
+- **Never diagnose a dead project by DNS.** `list_projects` distinguishes
+  `INACTIVE` from absent; the resolver cannot.
+- **Never create a third project** to work around the cap — it takes one of
+  the other two down. A new app is a new **schema** in `Stride`.
+- Restoring needs a free slot first; `restore_project` returns a `403` naming
+  the owner and the limit, which is the clearest signal you will get.
+
+**One more false alarm worth naming:** `pg_stat_user_tables.n_live_tup` reads
+**0 for every table** after a restore, because the statistics collector resets.
+It is an estimate, not a count. Use `count(*)` before concluding anything —
+this looked like total data loss on a database that was completely intact.
 
 So the real rule is: **the first apps get their own project; everything after
 shares one, taking a Postgres schema each.** Name the schema after the app or
@@ -443,14 +476,107 @@ than discovering it when handing an app's key to a deployment.
 3. Create the tables, `enable row level security` on each, and add no policies.
 4. `grant all on all tables in schema <app> to service_role;` plus the matching
    `alter default privileges`.
-5. Expose it to PostgREST, **additively**, then reload:
+5. Expose it to PostgREST, **additively**, then reload **both** caches:
    ```sql
    alter role authenticator set pgrst.db_schemas = 'public, graphql_public, edu, sap, <app>';
    notify pgrst, 'reload config';
+   notify pgrst, 'reload schema';
    ```
    Read the current value first and keep every schema already in it. Dropping
    one silently breaks that app's API.
+
+   **Both notifies, in that order.** Learned 2026-09-22 moving `wealth` and
+   `third` into `Stride`: `reload config` alone picks up the schema list but
+   not the tables inside it. The two failures look almost identical from the
+   app and neither says what is wrong:
+
+   | Symptom | Cause |
+   | --- | --- |
+   | `406` on every request to the schema | schema not in `pgrst.db_schemas` |
+   | `404` on every request to the schema | schema exposed, but PostgREST's schema cache is stale |
+
+   Both render in the app as **zeros, not an error** — an empty portfolio, a
+   ₪0 net worth — which looks exactly like data loss and is not. Check the
+   status code in the Supabase edge logs before believing the screen.
+
+   The dashboard's **Exposed schemas** setting is the authoritative copy. Set
+   it there too, or a later settings save will silently revert the SQL.
 6. In the app, `createClient(url, key, { db: { schema: '<app>' } })`.
+
+### Table names — check the register before naming one
+
+**Before you create a table, read the register below and prefer a name that is
+not already in use anywhere in the collection**, even in a different schema.
+This is a preference, not a prohibition — but breaking it needs a reason.
+
+Two costs, one hard and one soft:
+
+**Hard — `public` in `Stride` now holds two apps.** After the 2026-09-22
+consolidation, the Stride fitness app and stride2mortgage both live in
+`public`. They coexist only because their names happen not to collide. A new
+table in `public` that clashes with the other app's is a genuine conflict, and
+it surfaces mid-feature rather than at design time. Anything new going into a
+shared `public` is the case to check hardest.
+
+**Soft — a reused name makes every later conversation ambiguous.** `sessions`
+already means five different tables. PostgREST routes are `/rest/v1/<table>`
+with the schema carried in a header, so logs, traces and edge-log dashboards
+show only the bare name: `/rest/v1/snapshots` could be the mortgage app's or
+the wealth app's, and you cannot tell them apart while debugging. That cost is
+paid every time something breaks.
+
+**Already multiply-used — adding another instance of these is the worst case:**
+
+| Name | Lives in |
+| --- | --- |
+| `sessions` | `public`, `edu`, `sap`, `third`, palette `public` |
+| `users` | `public`, `edu`, `sap`, `third`, palette `public` |
+| `settings` | `public`, `stride2do`, `third`, palette `public` |
+| `payments` | `third`, palette `public` |
+| `snapshots` | `public`, `wealth` |
+| `study_sessions` | `edu`, `sap` |
+
+`users` and `sessions` are the deliberate exception: the PIN gate gives every
+app its own pair, and inside the `stride2mortgage` project the `public` pair
+was shared on purpose so one username and PIN worked across three apps. Do not
+try to "fix" those.
+
+**The register — read from both live databases 2026-09-22.**
+
+Project `Stride` (`xmjxfnmqsvxxevhxxalq`):
+
+| Schema | Tables |
+| --- | --- |
+| `public` | `challenge_log`, `challenges`, `days`, `exercises`, `extra_income`, `freeze_ledger`, `households`, `market_prices`, `plan_settings`, `progression_decisions`, `progression_levels`, `readings`, `sessions`, `set_logs`, `settings`, `snapshots`, `users`, `workout_sessions`, `workout_template_exercises`, `workout_templates` |
+| `edu` | `assignments`, `courses`, `degrees`, `enrichment_steps`, `enrichments`, `exam_dates`, `past_exams`, `requirement_groups`, `sessions`, `study_sessions`, `terms`, `users` |
+| `sap` | `attempts`, `sessions`, `study_sessions`, `users` |
+| `stride2do` | `settings`, `tasks` |
+| `wealth` | `accounts`, `budgets`, `expenses`, `group_budgets`, `group_members`, `group_payment_methods`, `groups`, `holdings`, `income`, `lots`, `prices`, `shared_expenses`, `snapshots`, `widget_keys` |
+| `third` | `borrowers`, `cpi_fetch_log`, `cpi_index`, `events`, `payments`, `rent_periods`, `sessions`, `settings`, `users` |
+
+Project `stride2palette` (`niyfawkpjlkrspyutjmx`):
+
+| Schema | Tables |
+| --- | --- |
+| `public` | `domains`, `fund_deposits`, `item_domains`, `item_owners`, `items`, `payments`, `sessions`, `settings`, `subtasks`, `users` |
+
+**If your session creates a table, add it to this register in the same commit
+as the migration.** Not afterwards, not in a follow-up — the next session will
+trust this list, and a register that lags the database is worse than no
+register, because it converts a checkable fact into a confident wrong answer.
+The same applies to dropping or renaming one.
+
+To regenerate the whole register from a project rather than editing by hand:
+
+```sql
+select table_schema, string_agg(table_name, ', ' order by table_name)
+from information_schema.tables
+where table_type = 'BASE TABLE'
+  and table_schema not in ('pg_catalog','information_schema','auth','storage',
+                           'realtime','vault','extensions','graphql','graphql_public',
+                           'supabase_migrations','supabase_functions','pgbouncer')
+group by table_schema order by table_schema;
+```
 
 **RLS: confirmed across four apps.** Every table in `public`, `edu`, `sap` and
 `stride2do` has RLS enabled and **zero** policies. This is the most consistently
