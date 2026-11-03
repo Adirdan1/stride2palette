@@ -59,6 +59,11 @@
 
   --line: #e8dac2;
   --line-strong: #cfba96;
+  /* The only outline of a control — a field, an unticked box, a switch track.
+     A boundary, not a rule: WCAG 1.4.11 asks 3:1, and --line-strong is ~1.7:1.
+     Shared across the collection since 2026-11 (ship-stride-app skill).
+     Palette's own light value: on its pasta paper the shared #958b7b is 2.999. */
+  --edge-control: #928877;
 
   /* The accent. Ragù means *cleared*.
      Adir asked for the sauce, knowing it costs the obvious reading of green for
@@ -125,6 +130,7 @@
 
     --line: #33291b;
     --line-strong: #4d3f2a;
+    --edge-control: #7a7163;
 
     /* Lifted, because the same ragù on near-black is muddy and fails contrast. */
     --ragu: #f08a6c;
@@ -974,7 +980,7 @@ button.chip[aria-pressed='true'] {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.6rem 0.8rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--edge-control);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
